@@ -9,6 +9,10 @@ var root: TreeItem = null
 var convos: TreeItem = null
 var chars: TreeItem = null
 
+export var folder_icon: ImageTexture
+export var file_icon: ImageTexture
+export var card_icon: ImageTexture
+
 signal conversation_changed(path)
 signal conversation_selected(path)
 signal conversation_created(path)
@@ -41,12 +45,14 @@ func refresh():
 		item.set_text(0, text)
 		item.set_metadata(0, path)
 		item.set_tooltip(0, path)
+		item.set_icon(0, file_icon)
 
 		var nodes = Diagraph.load_json(Diagraph.name_to_path(path), {})
 		for node in nodes.values():
 			var _item = create_item(item)
 			_item.set_text(0, node.name)
 			_item.set_metadata(0, node.id)
+			_item.set_icon(0, card_icon)
 			# _item.set_tooltip(0, str(node.id))
 
 func _on_gui_input(event):

@@ -87,13 +87,14 @@ __meta__ = {
 }
 
 [node name="Id" type="Label" parent="Body/Toolbar"]
-margin_right = 26.0
-margin_bottom = 23.0
+margin_top = 3.0
+margin_right = 19.0
+margin_bottom = 20.0
 custom_styles/normal = SubResource( 11 )
 text = "0 | "
 
 [node name="Title" parent="Body/Toolbar" instance=ExtResource( 3 )]
-margin_left = 33.0
+margin_left = 26.0
 margin_right = 144.0
 margin_bottom = 24.0
 rect_scale = Vector2( 1, 1 )

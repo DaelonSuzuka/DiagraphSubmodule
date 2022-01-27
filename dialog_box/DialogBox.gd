@@ -96,7 +96,7 @@ func start(conversation, options={}):
 
 	current_data = nodes[current_node]
 	current_data.text = current_data.text.split('\n')
-	
+
 	line_count = 0
 	current_line = line
 	if line == -1:
@@ -131,6 +131,15 @@ func next():
 		return
 
 	if current_line == current_data.text.size():
+		if current_data.type == 'branch':
+			for b in current_data.branches:
+				var branch = current_data.branches[b]
+				if branch.condition and branch.next:
+					var result = Eval.evaluate(branch.condition, self, Diagraph.get_locals())
+					if result == true:
+						current_data.next = branch.next
+						break
+
 		if current_data.next == 'none':
 			stop()
 			return
@@ -151,6 +160,7 @@ func next():
 
 		current_node = current_data.next
 		current_data = nodes[current_node]
+		current_data.text = current_data.text.split('\n')
 		current_line = 0
 
 	var line = current_data.text[current_line]

@@ -30,9 +30,9 @@ image = SubResource( 8 )
 size = Vector2( 16, 16 )
 
 [node name="1" instance=ExtResource( 1 )]
-margin_right = 200.0
-margin_bottom = 200.0
-rect_min_size = Vector2( 400, 250 )
+margin_right = 400.0
+margin_bottom = 175.0
+rect_min_size = Vector2( 400, 175 )
 slot/0/left_enabled = true
 slot/1/left_enabled = false
 slot/1/left_type = 0
@@ -68,7 +68,7 @@ script = ExtResource( 2 )
 
 [node name="Body" parent="." index="0"]
 margin_right = 389.0
-margin_bottom = 106.0
+margin_bottom = 55.0
 
 [node name="Title" parent="Body/Toolbar" index="1"]
 margin_right = 344.0
@@ -92,9 +92,9 @@ __meta__ = {
 }
 
 [node name="Label" type="Label" parent="Body/VBoxContainer" index="0"]
-margin_top = 48.0
+margin_top = 3.0
 margin_right = 378.0
-margin_bottom = 79.0
+margin_bottom = 28.0
 size_flags_horizontal = 3
 text = "Conditions:"
 __meta__ = {
@@ -103,20 +103,20 @@ __meta__ = {
 
 [node name="Branch1" type="HBoxContainer" parent="." index="1"]
 margin_left = 11.0
-margin_top = 110.0
+margin_top = 59.0
 margin_right = 389.0
-margin_bottom = 141.0
+margin_bottom = 84.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch1" index="0"]
-margin_right = 346.0
-margin_bottom = 31.0
+margin_right = 348.0
+margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch1" index="1"]
-margin_left = 350.0
+margin_left = 352.0
 margin_right = 378.0
-margin_bottom = 31.0
+margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
 custom_styles/pressed = SubResource( 2 )
@@ -129,84 +129,84 @@ items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", n
 
 [node name="Branch2" type="HBoxContainer" parent="." index="2"]
 margin_left = 11.0
-margin_top = 145.0
+margin_top = 88.0
 margin_right = 389.0
-margin_bottom = 176.0
+margin_bottom = 113.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch2" index="0"]
-margin_right = 346.0
-margin_bottom = 31.0
+margin_right = 348.0
+margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch2" index="1"]
-margin_left = 350.0
+margin_left = 352.0
 margin_right = 378.0
-margin_bottom = 31.0
+margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
 custom_styles/pressed = SubResource( 2 )
 custom_styles/focus = SubResource( 3 )
 custom_styles/disabled = SubResource( 4 )
 custom_styles/normal = SubResource( 5 )
-text = "1"
+text = "2"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
 [node name="Branch3" type="HBoxContainer" parent="." index="3"]
 margin_left = 11.0
-margin_top = 180.0
+margin_top = 117.0
 margin_right = 389.0
-margin_bottom = 211.0
+margin_bottom = 142.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch3" index="0"]
-margin_right = 346.0
-margin_bottom = 31.0
+margin_right = 348.0
+margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch3" index="1"]
-margin_left = 350.0
+margin_left = 352.0
 margin_right = 378.0
-margin_bottom = 31.0
+margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
 custom_styles/pressed = SubResource( 2 )
 custom_styles/focus = SubResource( 3 )
 custom_styles/disabled = SubResource( 4 )
 custom_styles/normal = SubResource( 5 )
-text = "1"
+text = "3"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
 [node name="Branch4" type="HBoxContainer" parent="." index="4"]
 margin_left = 11.0
-margin_top = 215.0
+margin_top = 146.0
 margin_right = 389.0
-margin_bottom = 246.0
+margin_bottom = 171.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch4" index="0"]
-margin_right = 346.0
-margin_bottom = 31.0
+margin_right = 348.0
+margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch4" index="1"]
-margin_left = 350.0
+margin_left = 352.0
 margin_right = 378.0
-margin_bottom = 31.0
+margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
 custom_styles/pressed = SubResource( 2 )
 custom_styles/focus = SubResource( 3 )
 custom_styles/disabled = SubResource( 4 )
 custom_styles/normal = SubResource( 5 )
-text = "1"
+text = "4"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
 [node name="Control" type="Control" parent="." index="5"]
 margin_left = 11.0
-margin_top = 250.0
+margin_top = 175.0
 margin_right = 389.0
-margin_bottom = 250.0
+margin_bottom = 175.0

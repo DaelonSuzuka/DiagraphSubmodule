@@ -70,7 +70,6 @@ func load_conversation(path):
 	var name = parts[0]
 	if current_conversation == name:
 		return
-	print('loading convo: ', path)
 	GraphEdit.clear()
 	current_conversation = name
 
@@ -139,8 +138,8 @@ func run():
 		save_conversation()
 		save_editor_data()
 		$Preview.show()
-		print('run ', current_conversation)
-		DialogBox.start(current_conversation, node.name)
+		prints('run ', current_conversation + ':' + node.name)
+		DialogBox.start(current_conversation + ':' + node.name)
 	
 func stop():
 	$Preview.hide()

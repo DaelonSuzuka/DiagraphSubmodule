@@ -6,6 +6,7 @@ extends HBoxContainer
 func get_data():
 	var data = {
 		condition = $Condition.text,
+		next = '',
 	}
 	return data
 

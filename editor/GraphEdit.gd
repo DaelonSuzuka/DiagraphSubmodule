@@ -7,6 +7,7 @@ onready var ContextMenu = preload('res://addons/diagraph/utils/ContextMenu.gd')
 
 onready var node_types = {
 	'entry': load('res://addons/diagraph/nodes/EntryNode.tscn'),
+	'comment': load('res://addons/diagraph/nodes/CommentNode.tscn'),
 	'exit': load('res://addons/diagraph/nodes/ExitNode.tscn'),
 	'base': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
 	'speech': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
@@ -51,7 +52,7 @@ func on_popup_request(position):
 		ctx = null
 	ctx = ContextMenu.new(self, 'new_node_requested')
 	ctx.add_separator('New Node:')
-	for type in ['Entry', 'Exit', 'Speech', 'Branch', 'Jump']:
+	for type in ['Entry', 'Exit', 'Speech', 'Comment', 'Branch', 'Jump']:
 		ctx.add_item(type)
 	ctx.open(position)
 
@@ -122,7 +123,9 @@ func request_connection(from, from_slot, to, to_slot) -> bool:
 				return false
 	if !has_node(from):
 		return false
-		
+	if !(from in nodes):
+		return false
+
 	nodes[from].data.connections[to] = [from_slot, to_slot]
 	connect_node(from, from_slot, to, to_slot)
 	return true
@@ -134,11 +137,11 @@ func request_disconnection(from, from_slot, to, to_slot) -> void:
 func on_connection_from_empty(to, to_slot, release_position) -> void:
 	var data = {
 		type = 'speech',
-		offset = get_offset_from_mouse()
+		offset = var2str(get_offset_from_mouse())
 	}
 	if use_snap:
 		var snap = snap_distance
-		data.offset = data.offset.snapped(Vector2(snap, snap))
+		data.offset = var2str(data.offset.snapped(Vector2(snap, snap)))
 	var node = create_node(data)
 
 	request_connection(node.name, 0, to, to_slot)
@@ -146,11 +149,11 @@ func on_connection_from_empty(to, to_slot, release_position) -> void:
 func on_connection_to_empty(from, from_slot, release_position) -> void:
 	var data = {
 		type = 'speech',
-		offset = get_offset_from_mouse()
+		offset = var2str(get_offset_from_mouse())
 	}
 	if use_snap:
 		var snap = snap_distance
-		data.offset = data.offset.snapped(Vector2(snap, snap))
+		data.offset = var2str(data.offset.snapped(Vector2(snap, snap)))
 	var node = create_node(data)
 	
 	if !request_connection(from, from_slot, node.name, 0):

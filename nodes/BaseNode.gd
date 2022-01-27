@@ -7,9 +7,10 @@ var data := {
 	id = 0,
 	type = 'base',
 	name = '',
+	text = '',
 	next = 'none',
-	rect_size = {x = 0, y = 0},
-	offset = {x = 0, y = 0},
+	rect_size = '',
+	offset = '',
 	connections = {}
 }
 
