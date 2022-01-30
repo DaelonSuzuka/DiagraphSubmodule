@@ -126,6 +126,8 @@ func request_connection(from, from_slot, to, to_slot) -> bool:
 		return false
 	if !(from in nodes):
 		return false
+	if from == to:
+		return false
 
 	nodes[from].data.connections[to] = [from_slot, to_slot]
 	connect_node(from, from_slot, to, to_slot)
