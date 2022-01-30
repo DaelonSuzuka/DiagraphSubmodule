@@ -58,7 +58,8 @@ func save_conversation():
 	if !current_conversation:
 		return
 	var nodes = GraphEdit.get_conversation()
-	save_json(Diagraph.name_to_path(current_conversation), nodes)
+	var path = Diagraph.name_to_path(current_conversation)
+	Diagraph.save_json(path, nodes)
 
 func change_conversation(path):
 	save_conversation()
@@ -77,7 +78,7 @@ func load_conversation(path):
 		GraphEdit.set_data(editor_data[name])
 	else:
 		editor_data[name] = {}
-	var nodes = load_json(Diagraph.name_to_path(name), {})
+	var nodes = Diagraph.load_json(Diagraph.name_to_path(name), {})
 	if nodes:
 		GraphEdit.set_conversation(nodes)
 
@@ -93,7 +94,7 @@ func delete_conversation(path):
 	editor_data.erase(path)
 	save_editor_data()
 	var dir = Directory.new()
-	dir.remove(Diagraph.name_to_path(path))
+	dir.remove(Diagraph.prefix + Diagraph.name_to_path(path))
 	Diagraph.load_conversations()
 
 func rename_conversation(old, new):
@@ -104,7 +105,9 @@ func rename_conversation(old, new):
 	editor_data.erase(old)
 	save_editor_data()
 	var dir = Directory.new()
-	dir.rename(Diagraph.name_to_path(old), Diagraph.name_to_path(new))
+	var old_path = Diagraph.prefix + Diagraph.name_to_path(old)
+	var new_path = Diagraph.prefix + Diagraph.name_to_path(new)
+	dir.rename(old_path, new_path)
 	load_conversation(new)
 	Diagraph.load_conversations()
 
@@ -123,10 +126,10 @@ func card_renamed(old, new):
 # ******************************************************************************
 
 func character_added(path):
-	var char_map = load_json(Diagraph.character_map_path, {})
+	var char_map = Diagraph.load_json(Diagraph.character_map_path, {})
 	var c = load(path).instance()
 	char_map[c.name] = path
-	save_json(Diagraph.character_map_path, char_map)
+	Diagraph.save_json(Diagraph.character_map_path, char_map)
 	Diagraph.refresh()
 
 # ******************************************************************************
@@ -138,7 +141,6 @@ func run():
 		save_conversation()
 		save_editor_data()
 		$Preview.show()
-		prints('run ', current_conversation + ':' + node.name)
 		DialogBox.start(current_conversation + ':' + node.name)
 	
 func stop():
@@ -156,29 +158,11 @@ func save_editor_data():
 		return
 	editor_data[current_conversation] = GraphEdit.get_data()
 	editor_data['current_conversation'] = current_conversation
-	save_json(editor_data_file_name, editor_data)
+	Diagraph.save_json(editor_data_file_name, editor_data)
 
 func load_editor_data():
-	var data = load_json(editor_data_file_name)
+	var data = Diagraph.load_json(editor_data_file_name)
 	if data:
 		editor_data = data
 		if 'current_conversation' in editor_data:
 			load_conversation(editor_data['current_conversation'])
-
-# ******************************************************************************
-
-func save_json(path, data):
-	var f = File.new()
-	f.open(path, File.WRITE)
-	f.store_string(JSON.print(data, "\t"))
-	f.close()
-
-func load_json(path, default=null):
-	var result = default
-	var f = File.new()
-	if f.file_exists(path):
-		f.open(path, File.READ)
-		var text = f.get_as_text()
-		f.close()
-		result = JSON.parse(text).result
-	return result
