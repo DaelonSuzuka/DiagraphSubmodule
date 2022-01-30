@@ -1,6 +1,8 @@
-[gd_scene load_steps=10 format=2]
+[gd_scene load_steps=11 format=2]
 
 [ext_resource path="res://addons/diagraph/dialog_box/DialogBox.gd" type="Script" id=3]
+
+[sub_resource type="Theme" id=11]
 
 [sub_resource type="StyleBoxEmpty" id=6]
 
@@ -50,46 +52,42 @@ corner_detail = 1
 anti_aliasing = false
 
 [node name="DialogBox" type="Control"]
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
+anchor_top = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = -512.0
-margin_top = -250.0
-margin_right = 512.0
+margin_top = 0.200012
 mouse_filter = 1
+theme = SubResource( 11 )
 script = ExtResource( 3 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="Portrait" type="Control" parent="."]
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-margin_left = -343.0
-margin_top = -158.0
-margin_right = -343.0
-margin_bottom = -158.0
+anchor_left = 0.15625
+anchor_top = 0.596402
+anchor_right = 0.15625
+anchor_bottom = 0.596402
+margin_top = 0.198593
+margin_bottom = 0.198593
+rect_scale = Vector2( 2, 2 )
 mouse_filter = 2
 __meta__ = {
-"_edit_use_anchors_": false
+"_edit_use_anchors_": true
 }
 
 [node name="Name" type="Label" parent="."]
-anchor_left = 0.442
-anchor_top = 1.0
-anchor_right = 0.442
-anchor_bottom = 1.0
-margin_left = -141.608
-margin_top = -184.0
-margin_right = 0.391968
-margin_bottom = -158.0
+anchor_left = 0.320313
+anchor_top = 0.386257
+anchor_right = 0.429688
+anchor_bottom = 0.439626
 custom_styles/normal = SubResource( 6 )
 text = "test"
 align = 1
 valign = 1
+__meta__ = {
+"_edit_use_anchors_": true
+}
 
 [node name="Outline" type="Panel" parent="Name"]
 show_behind_parent = true
@@ -120,35 +118,29 @@ __meta__ = {
 }
 
 [node name="Options" type="HBoxContainer" parent="."]
-anchor_left = 0.484
-anchor_top = 1.0
-anchor_right = 0.484
+anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 0.383972
-margin_top = -190.0
-margin_right = 496.384
-margin_bottom = -153.0
+margin_left = 456.0
+margin_top = 108.0
+margin_right = -16.0
+margin_bottom = -159.8
 alignment = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="TextBox" type="RichTextLabel" parent="."]
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-margin_left = -200.0
-margin_top = -131.0
-margin_right = 480.0
-margin_bottom = -32.0
+anchor_left = 0.320313
+anchor_top = 0.520347
+anchor_right = 0.960938
+anchor_bottom = 0.893929
 rect_clip_content = false
 custom_styles/focus = SubResource( 4 )
 custom_styles/normal = SubResource( 5 )
 bbcode_enabled = true
 text = "teastaaegaegas"
 __meta__ = {
-"_edit_use_anchors_": false
+"_edit_use_anchors_": true
 }
 
 [node name="Outline" type="Panel" parent="TextBox"]
@@ -172,7 +164,7 @@ anchor_bottom = 1.0
 margin_left = -5.0
 margin_top = -5.0
 margin_right = 5.0
-margin_bottom = 6.0
+margin_bottom = 5.0
 custom_styles/panel = SubResource( 7 )
 __meta__ = {
 "_edit_lock_": true,
