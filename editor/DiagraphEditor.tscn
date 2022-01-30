@@ -177,30 +177,30 @@ text = "Save"
 flat = true
 
 [node name="Clear" type="Button" parent="Toolbar"]
+visible = false
 margin_right = 42.0
 margin_bottom = 32.0
 text = "Clear"
 flat = true
 
-[node name="Run" type="Button" parent="Toolbar"]
-margin_left = 46.0
-margin_right = 79.0
-margin_bottom = 32.0
-text = "Run"
-flat = true
-
 [node name="FontMinus" type="Button" parent="Toolbar"]
-margin_left = 83.0
-margin_right = 123.0
+margin_right = 40.0
 margin_bottom = 32.0
 text = "Font-"
 flat = true
 
 [node name="FontPlus" type="Button" parent="Toolbar"]
-margin_left = 127.0
-margin_right = 170.0
+margin_left = 44.0
+margin_right = 87.0
 margin_bottom = 32.0
 text = "Font+"
+flat = true
+
+[node name="Run" type="Button" parent="Toolbar"]
+margin_left = 91.0
+margin_right = 124.0
+margin_bottom = 32.0
+text = "Run"
 flat = true
 
 [node name="ConfirmClear" type="ConfirmationDialog" parent="."]
@@ -216,7 +216,6 @@ __meta__ = {
 }
 
 [node name="Preview" type="Control" parent="."]
-visible = false
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
@@ -232,35 +231,46 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Stop" parent="Preview" instance=ExtResource( 3 )]
-anchor_left = 0.0421569
-anchor_top = 0.14094
-anchor_right = 0.0421569
-anchor_bottom = 0.14094
-margin_left = -3.8147e-05
-margin_top = -0.000236511
+[node name="HBoxContainer" type="HBoxContainer" parent="Preview"]
+margin_left = 102.0
+margin_top = 109.0
+margin_right = 320.0
+margin_bottom = 149.0
+custom_constants/separation = 10
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Stop" parent="Preview/HBoxContainer" instance=ExtResource( 3 )]
+margin_bottom = 40.0
 text = "Stop"
 
-[node name="Next" parent="Preview" instance=ExtResource( 3 )]
-anchor_left = 0.0421569
-anchor_top = 0.14094
-anchor_right = 0.0421569
-anchor_bottom = 0.14094
-margin_left = 100.0
-margin_top = -0.000236511
-margin_right = 171.0
+[node name="Next" parent="Preview/HBoxContainer" instance=ExtResource( 3 )]
+margin_left = 80.0
+margin_right = 150.0
+margin_bottom = 40.0
 toggle_mode = true
 text = "Next"
 
-[node name="Debug" parent="Preview" instance=ExtResource( 3 )]
-anchor_left = 0.0421569
-anchor_top = 0.14094
-anchor_right = 0.0421569
-anchor_bottom = 0.14094
-margin_left = 204.0
-margin_top = -0.000236511
-margin_right = 275.0
+[node name="Debug" parent="Preview/HBoxContainer" instance=ExtResource( 3 )]
+margin_left = 160.0
+margin_right = 230.0
+margin_bottom = 40.0
 toggle_mode = true
 text = "Debug"
+
+[node name="DialogFontMinus" parent="Preview/HBoxContainer" instance=ExtResource( 3 )]
+margin_left = 240.0
+margin_right = 310.0
+margin_bottom = 40.0
+toggle_mode = true
+text = "Font-"
+
+[node name="DialogFontPlus" parent="Preview/HBoxContainer" instance=ExtResource( 3 )]
+margin_left = 320.0
+margin_right = 390.0
+margin_bottom = 40.0
+toggle_mode = true
+text = "Font+"
 
 [node name="DialogBox" parent="Preview" instance=ExtResource( 5 )]

@@ -7,6 +7,13 @@ onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
 onready var FontMinus = find_node('FontMinus')
 onready var FontPlus = find_node('FontPlus')
+onready var Run = find_node('Run')
+onready var Stop = find_node('Stop')
+onready var Next = find_node('Next')
+onready var Debug = find_node('Debug')
+onready var Preview = find_node('Preview')
+onready var DialogFontMinus = find_node('DialogFontMinus')
+onready var DialogFontPlus = find_node('DialogFontPlus')
 onready var Toolbar = $Toolbar
 onready var DialogBox = $Preview/DialogBox
 
@@ -17,22 +24,16 @@ var editor_data := {}
 # ******************************************************************************
 
 func _ready():
-	$Toolbar/New.connect('pressed', self, 'create_conversation')
-	$Toolbar/Clear.connect('pressed', $ConfirmClear, 'popup')
-	$ConfirmClear.connect('confirmed', GraphEdit, 'clear')
-	$Toolbar/Save.connect('pressed', self, 'save_conversation')
-	$Toolbar/Save.connect('pressed', self, 'save_editor_data')
-	$Toolbar/Run.connect('pressed', self, 'run')
-	$Preview/Stop.connect('pressed', self, 'stop')
-	$Preview/Next.connect('pressed', self, 'next')
-	$Preview/Debug.connect('toggled', $Preview/DialogBox/DebugLog, 'set_visible')
+	# $Toolbar/New.connect('pressed', self, 'create_conversation')
+	# $Toolbar/Clear.connect('pressed', $ConfirmClear, 'popup')
+	# $ConfirmClear.connect('confirmed', GraphEdit, 'clear')
+	Run.connect('pressed', self, 'run')
+	Stop.connect('pressed', self, 'stop')
+	Next.connect('pressed', self, 'next')
+	Debug.connect('toggled', $Preview/DialogBox/DebugLog, 'set_visible')
 	DialogBox.connect('done', self, 'stop')
 
-	$Preview/DialogBox.show()
-	$Preview/Stop.show()
-	$Preview/Debug.show()
-	$Preview/Dimmer.show()
-	$Preview.hide()
+	Preview.hide()
 
 	Tree.connect('conversation_changed', self, 'change_conversation')
 	Tree.connect('conversation_selected', self, 'conversation_selected')
@@ -44,6 +45,8 @@ func _ready():
 	
 	FontMinus.connect('pressed', self, 'font_minus')
 	FontPlus.connect('pressed', self, 'font_plus')
+	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
+	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
 	if !Engine.editor_hint or is_plugin:
 		load_editor_data()
@@ -62,6 +65,12 @@ func font_minus():
 
 func font_plus():
 	theme.default_font.size += 1
+
+func dialog_font_minus():
+	DialogBox.theme.default_font.size -= 1
+
+func dialog_font_plus():
+	DialogBox.theme.default_font.size += 1
 
 # ******************************************************************************
 
@@ -175,6 +184,8 @@ func save_editor_data():
 func load_editor_data():
 	var data = Diagraph.load_json(editor_data_file_name)
 	if !data:
+		editor_data['current_conversation'] = '0 Introduction'
+		load_conversation(editor_data['current_conversation'])
 		return
 	editor_data = data
 	if 'current_conversation' in editor_data:
