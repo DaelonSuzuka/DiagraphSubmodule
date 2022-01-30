@@ -28,10 +28,11 @@ func _ready():
 	connect('delete_nodes_request', self, 'delete_nodes_request')
 	connect('paste_nodes_request', self, 'paste_nodes_request')
 	connect('popup_request', self, 'on_popup_request')
-	connect('gui_input', self, '_on_gui_input')
 
-func _on_gui_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if !(event is InputEventMouseButton) or !event.pressed:
+		return
+	if !Rect2(rect_position, rect_size).has_point(event.position):
 		return
 
 	# Scroll wheel up/down to zoom
@@ -207,16 +208,23 @@ func get_selected_nodes() -> Array:
 
 # ------------------------------------------------------------------------------
 
-func do_zoom_scroll(step: int) -> void:
-	# TODO: sometimes this gets really wierd
-	var new_zoom = zoom * pow(zoom_step, step)
-	var anchor = get_offset_from_mouse()
-	
-	var zoom_center = anchor - ((scroll_offset + rect_size) / 2)
-	var ratio = 1.0 - new_zoom / zoom
-	scroll_offset -= zoom_center * ratio
+# save the original mouse position
+# zoom the canvas
+# scale the original mouse position
+# get the new mouse position
+# add the difference to scroll_offset
 
+func do_zoom_scroll(step: int) -> void:
+	#TODO: this is much better, but still overshoots slightly
+	var anchor = get_offset_from_mouse()
+
+	var old_zoom = zoom
+	var new_zoom = zoom * pow(zoom_step, step)
 	zoom = new_zoom
+
+	var zoom_center = anchor - (scroll_offset + (rect_size / 2))
+	var ratio = 1.0 - zoom / old_zoom
+	scroll_offset -= zoom_center * ratio
 
 # ******************************************************************************
 
