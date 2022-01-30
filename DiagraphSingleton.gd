@@ -11,6 +11,7 @@ var conversation_path := 'conversations/'
 var conversations := []
 
 var dialog_target = null
+var is_plugin = false
 
 signal refreshed
 
@@ -63,17 +64,18 @@ func get_locals():
 # ******************************************************************************
 
 func _ready():
-	validate_paths()
-	call_deferred('refresh')
+	if !Engine.editor_hint or is_plugin:
+		validate_paths()
+		call_deferred('refresh')
 
-	if OS.has_feature('HTML5'):
-		var files = get_files('res://' + conversation_path, '.json')
-		for file in files:
-			var from_path = 'res://' + conversation_path + file
-			var to_path = 'user://' + conversation_path + file
-			var convo = load_json(from_path)
-			if convo:
-				save_json(to_path, convo)
+		if OS.has_feature('HTML5'):
+			var files = get_files('res://' + conversation_path, '.json')
+			for file in files:
+				var from_path = 'res://' + conversation_path + file
+				var to_path = 'user://' + conversation_path + file
+				var convo = load_json(from_path)
+				if convo:
+					save_json(to_path, convo)
 
 func refresh():
 	load_conversations()

@@ -5,6 +5,8 @@ extends Control
 
 onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
+onready var FontMinus = find_node('FontMinus')
+onready var FontPlus = find_node('FontPlus')
 onready var Toolbar = $Toolbar
 onready var DialogBox = $Preview/DialogBox
 
@@ -39,6 +41,9 @@ func _ready():
 	Tree.connect('conversation_renamed', self, 'rename_conversation')
 	Tree.connect('card_selected', self, 'card_selected')
 	Tree.connect('card_renamed', self, 'card_renamed')
+	
+	FontMinus.connect('pressed', self, 'font_minus')
+	FontPlus.connect('pressed', self, 'font_plus')
 
 	if !Engine.editor_hint or is_plugin:
 		load_editor_data()
@@ -51,6 +56,12 @@ func _ready():
 func autosave():
 	save_conversation()
 	save_editor_data()
+
+func font_minus():
+	theme.default_font.size -= 1
+
+func font_plus():
+	theme.default_font.size += 1
 
 # ******************************************************************************
 
@@ -85,7 +96,7 @@ func load_conversation(path):
 func create_conversation(path):
 	GraphEdit.clear()
 	current_conversation = path
-	Diagraph.load_conversations()
+	Diagraph.refresh()
 
 func delete_conversation(path):
 	if current_conversation == path:
@@ -95,7 +106,7 @@ func delete_conversation(path):
 	save_editor_data()
 	var dir = Directory.new()
 	dir.remove(Diagraph.prefix + Diagraph.name_to_path(path))
-	Diagraph.load_conversations()
+	Diagraph.refresh()
 
 func rename_conversation(old, new):
 	if current_conversation == old:
@@ -109,7 +120,7 @@ func rename_conversation(old, new):
 	var new_path = Diagraph.prefix + Diagraph.name_to_path(new)
 	dir.rename(old_path, new_path)
 	load_conversation(new)
-	Diagraph.load_conversations()
+	Diagraph.refresh()
 
 func conversation_selected(path):
 	pass
@@ -156,13 +167,18 @@ var editor_data_file_name = 'user://editor_data.json'
 func save_editor_data():
 	if !current_conversation:
 		return
-	editor_data[current_conversation] = GraphEdit.get_data()
 	editor_data['current_conversation'] = current_conversation
+	editor_data['font_size'] = theme.default_font.size
+	editor_data[current_conversation] = GraphEdit.get_data()
 	Diagraph.save_json(editor_data_file_name, editor_data)
 
 func load_editor_data():
 	var data = Diagraph.load_json(editor_data_file_name)
-	if data:
-		editor_data = data
-		if 'current_conversation' in editor_data:
-			load_conversation(editor_data['current_conversation'])
+	if !data:
+		return
+	editor_data = data
+	if 'current_conversation' in editor_data:
+		load_conversation(editor_data['current_conversation'])
+
+	if 'font_size' in editor_data:
+		theme.default_font.size = editor_data['font_size']
