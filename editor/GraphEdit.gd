@@ -22,8 +22,8 @@ var nodes = {}
 func _ready():
 	connect('connection_request', self, 'request_connection')
 	connect('disconnection_request', self, 'request_disconnection')
-	connect('connection_from_empty', self, 'on_connection_from_empty')
-	connect('connection_to_empty', self, 'on_connection_to_empty')
+	# connect('connection_from_empty', self, 'on_connection_from_empty')
+	# connect('connection_to_empty', self, 'on_connection_to_empty')
 	connect('copy_nodes_request', self, 'copy_nodes_request')
 	connect('delete_nodes_request', self, 'delete_nodes_request')
 	connect('paste_nodes_request', self, 'paste_nodes_request')
@@ -140,11 +140,12 @@ func request_disconnection(from, from_slot, to, to_slot) -> void:
 func on_connection_from_empty(to, to_slot, release_position) -> void:
 	var data = {
 		type = 'speech',
-		offset = var2str(get_offset_from_mouse())
+		offset = get_offset_from_mouse()
 	}
 	if use_snap:
 		var snap = snap_distance
-		data.offset = var2str(data.offset.snapped(Vector2(snap, snap)))
+		data.offset = data.offset.snapped(Vector2(snap, snap))
+	data.offset = var2str(data.offset)
 	var node = create_node(data)
 
 	request_connection(node.name, 0, to, to_slot)
@@ -152,11 +153,12 @@ func on_connection_from_empty(to, to_slot, release_position) -> void:
 func on_connection_to_empty(from, from_slot, release_position) -> void:
 	var data = {
 		type = 'speech',
-		offset = var2str(get_offset_from_mouse())
+		offset = get_offset_from_mouse()
 	}
 	if use_snap:
 		var snap = snap_distance
-		data.offset = var2str(data.offset.snapped(Vector2(snap, snap)))
+		data.offset = data.offset.snapped(Vector2(snap, snap))
+	data.offset = var2str(data.offset)
 	var node = create_node(data)
 	
 	if !request_connection(from, from_slot, node.name, 0):
