@@ -29,7 +29,6 @@ func _ready():
 	refresh()
 		
 	connect('item_selected', self, '_on_item_selected')
-	connect('item_rmb_selected', self, '_on_item_rmb_selected')
 	connect('gui_input', self, '_on_gui_input')
 	connect('item_edited', self, '_on_item_edited')
 
@@ -56,9 +55,13 @@ func refresh():
 			# _item.set_tooltip(0, str(node.id))
 
 func _on_gui_input(event):
-	if event is InputEventMouseButton and event.button_index == 1:
-		if event.pressed and event.doubleclick:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == 1 and event.doubleclick:
 			change_conversation()
+			accept_event()
+		if event.button_index == 2:
+			open_context_menu(event.position)
+			# accept_event()
 
 func change_conversation():
 	var item = get_selected()
@@ -118,31 +121,36 @@ func _on_item_selected() -> void:
 
 var ctx = null
 
-func _on_item_rmb_selected(position) -> void:
+func open_context_menu(position) -> void:
 	if ctx:
 		ctx.queue_free()
 		ctx = null
-	var item = get_selected()
 
-	ctx = ContextMenu.new(self, '_on_ctx_item_selected')
-	if item.get_parent() == root:
-		ctx.add_item('New')
-		ctx.add_item('Copy Path')
-		ctx.add_item('Rename')
-		ctx.add_item('Delete')
+	var item = get_item_at_position(position)
+
+	ctx = ContextMenu.new(self, 'context_menu_item_selected')
+	if item:
+		if item.get_parent() == root:
+			ctx.add_item('New')
+			ctx.add_item('Copy Path')
+			ctx.add_item('Rename')
+			ctx.add_item('Delete')
+		else:
+			ctx.add_item('Copy Path')
+			# ctx.add_item('Copy Name')
+			ctx.add_item('Rename')
+			# ctx.add_item('Delete')
 	else:
-		ctx.add_item('Copy Path')
-		# ctx.add_item('Copy Name')
-		ctx.add_item('Rename')
-		# ctx.add_item('Delete')
+		ctx.add_item('New')
 	ctx.open(get_global_mouse_position())
 
-func _on_ctx_item_selected(selection:String) -> void:
+func context_menu_item_selected(selection:String) -> void:
 	match selection:
 		'New':
 			var item = create_item(root)
 			item.set_text(0, 'new')
 			item.set_editable(0, true)
+			item.set_icon(0, file_icon)
 			item.select(0)
 			call_deferred('edit_selected')
 		'Copy Path':
