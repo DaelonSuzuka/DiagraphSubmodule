@@ -134,12 +134,15 @@ func next():
 		if current_data.type == 'branch':
 			for b in current_data.branches:
 				var branch = current_data.branches[b]
-				if branch.condition and branch.next:
-					var result = Eval.evaluate(branch.condition, self, Diagraph.get_locals())
-					if result == true:
+				if branch.next:
+					if branch.condition:
+						var result = Eval.evaluate(branch.condition, self, Diagraph.get_locals())
+						if !(result is String) and result == true:
+							current_data.next = branch.next
+							break
+					else:
 						current_data.next = branch.next
 						break
-
 		if current_data.next == 'none':
 			stop()
 			return
