@@ -36,7 +36,7 @@ func offset_changed():
 		
 		var region = Rect2(offset, rect_size)
 		for node in get_parent().nodes.values():
-			if node == self:
+			if node == self or !is_instance_valid(node):
 				continue
 			var node_region = Rect2(node.offset, node.rect_size)
 			if region.encloses(node_region):
