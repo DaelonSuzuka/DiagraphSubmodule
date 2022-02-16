@@ -33,6 +33,14 @@ func add_check_item(label: String, cb:=[]):
 	if cb:
 		callbacks[label] = cb
 
+func set_item_checked(item_text, state):
+	for i in popup.get_item_count():
+		if popup.get_item_text(i) == item_text:
+			if popup.is_item_checked(i) != state:
+				popup.toggle_item_checked(i)
+				return
+
+
 func add_submenu_item(label:String, submenu_name:String, cb:=[]) -> void:
 	var submenu:PopupMenu = popup.get_node(submenu_name)
 	submenu.add_item(label)
@@ -53,9 +61,17 @@ func _on_index_pressed(idx:int, submenu_name:='') -> void:
 		var obj = cb[0]
 		var method = cb[1]
 		if obj.has_method(method):
-			if len(cb) == 2:
-				obj.call(method)
-			if len(cb) == 3:
-				obj.call(method, cb[2])
+			if menu.is_item_checkable(idx):
+				menu.toggle_item_checked(idx)
+				var checked = menu.is_item_checked(idx)
+				if len(cb) == 2:
+					obj.call(method, checked)
+				if len(cb) == 3:
+					obj.call(method, checked, cb[2])
+			else:
+				if len(cb) == 2:
+					obj.call(method)
+				if len(cb) == 3:
+					obj.call(method, cb[2])
 
 	emit_signal('item_selected', item)
