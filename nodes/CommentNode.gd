@@ -36,7 +36,6 @@ var drag_children := {}
 func begin_move():
 	if !selected:
 		return
-	print('grabbed')
 	dragging = true
 	drag_children.clear()
 	start_pos = offset
@@ -58,7 +57,6 @@ func offset_changed():
 func end_move():
 	if !selected:
 		return
-	print('released')
 	dragging = false
 
 # ******************************************************************************
@@ -68,7 +66,7 @@ func zoom_changed(zoom):
 	
 	var stylebox:StyleBox = theme.get_stylebox('comment', 'GraphNode')
 	var width = max(round(1 / zoom), 1)
-	print(width)
+
 	stylebox.border_width_bottom = width
 	stylebox.border_width_top = width
 	stylebox.border_width_left = width
