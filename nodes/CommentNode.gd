@@ -14,6 +14,7 @@ func _ready():
 	ColorPicker.get_popup()
 	ColorPicker.connect('color_changed', self, 'set_color')
 	Tooltip.hide()
+	Title.connect('text_changed', Tooltip, 'set_text')
 
 	var parent = get_parent()
 	if parent is GraphEdit:
@@ -92,6 +93,8 @@ func get_data():
 	return data
 
 func set_data(new_data):
+	if 'name' in new_data:
+		Tooltip.text = new_data.name
 	if 'color' in new_data:
 		self_modulate = Color(new_data.color)
 		TooltipBG.modulate = Color(new_data.color)
