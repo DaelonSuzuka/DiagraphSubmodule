@@ -62,28 +62,24 @@ func end_move():
 
 # ******************************************************************************
 
-func zoom_changed(zoom):
-	Tooltip.hide()
-	
-	var stylebox:StyleBox = theme.get_stylebox('comment', 'GraphNode')
-	var width = max(round(1 / zoom), 1)
-
+func set_stylebox_borders(stylebox:StyleBox, width):
 	stylebox.border_width_bottom = width
 	stylebox.border_width_top = width
 	stylebox.border_width_left = width
 	stylebox.border_width_right = width
 
-	TooltipBG.get_stylebox('panel').border_width_bottom = width
-	TooltipBG.get_stylebox('panel').border_width_top = width
-	TooltipBG.get_stylebox('panel').border_width_left = width
-	TooltipBG.get_stylebox('panel').border_width_right = width
+func zoom_changed(zoom):
+	Tooltip.hide()
+	
+	var width = max(round(1 / zoom), 1) as int
 
-	# var tooltip_stylebox = TooltipBG.theme.get_stylebox('comment', 'Panel')
+	set_stylebox_borders(theme.get_stylebox('comment', 'GraphNode'), width)
+	set_stylebox_borders(theme.get_stylebox('commentfocus', 'GraphNode'), width)
+	set_stylebox_borders(TooltipBG.get_stylebox('panel'), width)
 
 	if zoom < .8:
 		Tooltip.show()
 		Tooltip.theme.default_font.size = round(16 / zoom)
-
 
 # ******************************************************************************
 
