@@ -26,7 +26,6 @@ signal card_renamed(id, new_path)
 
 func _ready():
 	Diagraph.connect('refreshed', self, 'refresh')
-	refresh()
 		
 	connect('item_selected', self, '_on_item_selected')
 	connect('gui_input', self, '_on_gui_input')
@@ -47,10 +46,19 @@ func refresh():
 		item.set_icon(0, file_icon)
 
 		var nodes = Diagraph.load_json(Diagraph.name_to_path(path), {})
+		var node_names = []
+		var nodes_by_name = {}
+		
 		for node in nodes.values():
+			nodes_by_name[node.name] = node
+			node_names.append(node.name)
+
+		node_names.sort()
+
+		for name in node_names:
 			var _item = create_item(item)
-			_item.set_text(0, node.name)
-			_item.set_metadata(0, node.id)
+			_item.set_text(0, nodes_by_name[name].name)
+			_item.set_metadata(0, nodes_by_name[name].id)
 			_item.set_icon(0, card_icon)
 			# _item.set_tooltip(0, str(node.id))
 

@@ -77,7 +77,7 @@ func dialog_font_plus():
 func save_conversation():
 	if !current_conversation:
 		return
-	var nodes = GraphEdit.get_conversation()
+	var nodes = GraphEdit.get_nodes()
 	var path = Diagraph.name_to_path(current_conversation)
 	Diagraph.save_json(path, nodes)
 
@@ -100,7 +100,7 @@ func load_conversation(path):
 		editor_data[name] = {}
 	var nodes = Diagraph.load_json(Diagraph.name_to_path(name), {})
 	if nodes:
-		GraphEdit.set_conversation(nodes)
+		GraphEdit.set_nodes(nodes)
 
 func create_conversation(path):
 	GraphEdit.clear()

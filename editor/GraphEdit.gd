@@ -13,26 +13,32 @@ onready var node_types = {
 	'speech': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
 	'branch': load('res://addons/diagraph/nodes/BranchNode.tscn'),
 	'jump': load('res://addons/diagraph/nodes/JumpNode.tscn'),
+	'subgraph': load('res://addons/diagraph/nodes/SubgraphNode.tscn'),
 }
 
 var nodes = {}
 
+signal zoom_changed(zoom)
+
 # ******************************************************************************
 
-func _ready():
+func _ready() -> void:
 	connect('connection_request', self, 'request_connection')
 	connect('disconnection_request', self, 'request_disconnection')
 	# connect('connection_from_empty', self, 'on_connection_from_empty')
 	# connect('connection_to_empty', self, 'on_connection_to_empty')
+	connect('duplicate_nodes_request', self, 'duplicate_nodes_request')
 	connect('copy_nodes_request', self, 'copy_nodes_request')
 	connect('delete_nodes_request', self, 'delete_nodes_request')
 	connect('paste_nodes_request', self, 'paste_nodes_request')
 	connect('popup_request', self, 'on_popup_request')
 
 func _input(event: InputEvent) -> void:
+	if !is_visible_in_tree():
+		return
 	if !(event is InputEventMouseButton) or !event.pressed:
 		return
-	if !Rect2(rect_position, rect_size).has_point(event.position):
+	if !Rect2(rect_global_position, rect_size).has_point(event.global_position):
 		return
 
 	# Scroll wheel up/down to zoom
@@ -46,21 +52,26 @@ func _input(event: InputEvent) -> void:
 # ******************************************************************************
 
 var ctx = null
+var ctx_position := Vector2()
 
-func on_popup_request(position):
+func dismiss_ctx() -> void:
 	if ctx:
 		ctx.queue_free()
 		ctx = null
+
+func on_popup_request(position) -> void:
+	dismiss_ctx()
 	ctx = ContextMenu.new(self, 'new_node_requested')
 	ctx.add_separator('New Node:')
-	for type in ['Entry', 'Exit', 'Speech', 'Comment', 'Branch', 'Jump']:
-		ctx.add_item(type)
+	for type in node_types:
+		ctx.add_item(type.capitalize())
+	ctx_position = get_offset_from_mouse()
 	ctx.open(position)
 
 func new_node_requested(type: String) -> void:
 	var data = {
 		type = type.to_lower(),
-		offset = get_offset_from_mouse()
+		offset = ctx_position
 	}
 	if use_snap:
 		var snap = snap_distance
@@ -83,7 +94,7 @@ func clear() -> void:
 
 var used_ids = []
 
-func get_id():
+func get_id() -> int:
 	var id = randi()
 	if id in used_ids:
 		id = get_id()
@@ -174,6 +185,10 @@ func delete_nodes_request() -> void:
 
 var copy_data = []
 
+func duplicate_nodes_request() -> void:
+	copy_nodes_request()
+	paste_nodes_request()
+
 func copy_nodes_request() -> void:
 	copy_data.clear()
 	for node in get_selected_nodes():
@@ -186,6 +201,8 @@ func paste_nodes_request() -> void:
 	var new_nodes = []
 	var center = Vector2(0, 0)
 	for data in copy_data:
+		if 'id' in data:
+			data.erase('id')
 		var node = create_node(data)
 		new_nodes.append(node)
 		center += node.offset
@@ -230,9 +247,11 @@ func do_zoom_scroll(step: int) -> void:
 	var ratio = 1.0 - zoom / old_zoom
 	scroll_offset -= zoom_center * ratio
 
+	emit_signal('zoom_changed', zoom)
+
 # ******************************************************************************
 
-func set_conversation(data):
+func set_nodes(data: Dictionary) -> void:
 	for id in data:
 		create_node(data[id])
 	for node in nodes.values():
@@ -240,7 +259,7 @@ func set_conversation(data):
 			var con = node.data.connections[to]
 			request_connection(node.name, con[0], to, con[1])
 
-func get_conversation():
+func get_nodes() -> Dictionary:
 	var data := {}
 	for node in nodes.values():
 		if is_instance_valid(node):
@@ -249,7 +268,7 @@ func get_conversation():
 
 # ******************************************************************************
 
-func set_data(data) -> void:
+func set_data(data: Dictionary) -> void:
 	if 'scroll_offset' in data:
 		scroll_offset = str2var(data.scroll_offset)
 	if 'minimap_enabled' in data:

@@ -13,6 +13,7 @@ var editor_button
 
 func _enter_tree():
 	add_autoload_singleton('Diagraph', singleton_path)
+	Diagraph.is_plugin = true
 
 	editor_instance = editor_class.instance()
 	editor_instance.is_plugin = true

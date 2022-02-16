@@ -40,17 +40,6 @@ func _ready():
 	set_slot_color_right(3, slot_colors[2])
 	set_slot_color_right(4, slot_colors[3])
 
-	connect('gui_input', self, '_on_gui_input')
-
-func _on_gui_input(event):
-	if !(event is InputEventMouseButton):
-		return
-	if event.button_index != 2 or !event.pressed:
-		return
-
-	# accept_event()
-	# print('right click')
-
 func index_pressed(index):
 	match Edit.get_popup().get_item_text(index):
 		'Choices':
