@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=2]
+[gd_scene load_steps=16 format=2]
 
 [ext_resource path="res://addons/diagraph/editor/GraphEdit.gd" type="Script" id=1]
 [ext_resource path="res://addons/diagraph/resources/theme.tres" type="Theme" id=2]
@@ -6,6 +6,7 @@
 [ext_resource path="res://addons/diagraph/editor/DiagraphEditor.gd" type="Script" id=4]
 [ext_resource path="res://addons/diagraph/dialog_box/DialogBox.tscn" type="PackedScene" id=5]
 [ext_resource path="res://addons/diagraph/editor/Tree.gd" type="Script" id=6]
+[ext_resource path="res://addons/diagraph/utils/MenuButton.gd" type="Script" id=7]
 
 [sub_resource type="StyleBoxFlat" id=7]
 bg_color = Color( 0.14902, 0.172549, 0.231373, 1 )
@@ -135,15 +136,22 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="GraphEdit" type="GraphEdit" parent="HSplit"]
+[node name="GraphContainer" type="Control" parent="HSplit"]
 margin_left = 158.0
 margin_right = 1020.0
 margin_bottom = 596.0
+
+[node name="GraphEdit" type="GraphEdit" parent="HSplit/GraphContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 right_disconnects = true
-scroll_offset = Vector2( -318, -266 )
+scroll_offset = Vector2( -306.7, -262.8 )
 snap_distance = 10
+zoom = 1.1
+zoom_min = 0.1
+zoom_max = 5.0
 zoom_step = 1.1
 show_zoom_label = true
 minimap_enabled = false
@@ -152,55 +160,64 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Toolbar" type="HBoxContainer" parent="."]
-margin_left = 746.0
-margin_top = 6.0
-margin_right = 1020.0
-margin_bottom = 38.0
+[node name="GraphToolbar" type="Control" parent="HSplit/GraphContainer"]
+anchor_right = 1.0
+margin_left = 10.0
+margin_right = -10.0
+margin_bottom = 30.0
+
+[node name="Panel" type="Panel" parent="HSplit/GraphContainer/GraphToolbar"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -10.0
+margin_right = 10.0
+
+[node name="HBox" type="HBoxContainer" parent="HSplit/GraphContainer/GraphToolbar"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_horizontal = 3
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="New" type="Button" parent="Toolbar"]
-visible = false
-margin_right = 37.0
-margin_bottom = 32.0
-text = "New"
+[node name="LeftPanel" type="Button" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_right = 26.0
+margin_bottom = 30.0
+toggle_mode = true
+text = "<<"
 flat = true
 
-[node name="Save" type="Button" parent="Toolbar"]
-visible = false
-margin_left = 41.0
-margin_right = 80.0
-margin_bottom = 32.0
-text = "Save"
-flat = true
+[node name="ZoomContainer" type="HBoxContainer" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_left = 30.0
+margin_right = 30.0
+margin_bottom = 30.0
 
-[node name="Clear" type="Button" parent="Toolbar"]
-visible = false
-margin_right = 42.0
-margin_bottom = 32.0
-text = "Clear"
-flat = true
+[node name="SettingsMenu" type="MenuButton" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_left = 34.0
+margin_right = 91.0
+margin_bottom = 30.0
+text = "Settings"
+script = ExtResource( 7 )
 
-[node name="FontMinus" type="Button" parent="Toolbar"]
-margin_right = 40.0
-margin_bottom = 32.0
-text = "Font-"
-flat = true
-
-[node name="FontPlus" type="Button" parent="Toolbar"]
-margin_left = 44.0
-margin_right = 87.0
-margin_bottom = 32.0
-text = "Font+"
-flat = true
-
-[node name="Run" type="Button" parent="Toolbar"]
-margin_left = 91.0
-margin_right = 124.0
-margin_bottom = 32.0
+[node name="Run" type="Button" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_left = 95.0
+margin_right = 128.0
+margin_bottom = 30.0
 text = "Run"
+flat = true
+
+[node name="Spacer" type="Control" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_left = 132.0
+margin_right = 812.0
+margin_bottom = 30.0
+size_flags_horizontal = 3
+
+[node name="RightPanel" type="Button" parent="HSplit/GraphContainer/GraphToolbar/HBox"]
+margin_left = 816.0
+margin_right = 842.0
+margin_bottom = 30.0
+toggle_mode = true
+text = ">>"
 flat = true
 
 [node name="ConfirmClear" type="ConfirmationDialog" parent="."]

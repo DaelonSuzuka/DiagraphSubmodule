@@ -5,8 +5,6 @@ extends Control
 
 onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
-onready var FontMinus = find_node('FontMinus')
-onready var FontPlus = find_node('FontPlus')
 onready var Run = find_node('Run')
 onready var Stop = find_node('Stop')
 onready var Next = find_node('Next')
@@ -14,8 +12,9 @@ onready var Debug = find_node('Debug')
 onready var Preview = find_node('Preview')
 onready var DialogFontMinus = find_node('DialogFontMinus')
 onready var DialogFontPlus = find_node('DialogFontPlus')
-onready var Toolbar = $Toolbar
-onready var DialogBox = $Preview/DialogBox
+onready var GraphToolbar = find_node('GraphToolbar')
+onready var DialogBox = find_node('DialogBox')
+onready var SettingsMenu:MenuButton = find_node('SettingsMenu')
 
 var is_plugin = false
 var current_conversation := ''
@@ -24,9 +23,6 @@ var editor_data := {}
 # ******************************************************************************
 
 func _ready():
-	# $Toolbar/New.connect('pressed', self, 'create_conversation')
-	# $Toolbar/Clear.connect('pressed', $ConfirmClear, 'popup')
-	# $ConfirmClear.connect('confirmed', GraphEdit, 'clear')
 	Run.connect('pressed', self, 'run')
 	Stop.connect('pressed', self, 'stop')
 	Next.connect('pressed', self, 'next')
@@ -43,16 +39,22 @@ func _ready():
 	Tree.connect('card_selected', self, 'card_selected')
 	Tree.connect('card_renamed', self, 'card_renamed')
 	
-	FontMinus.connect('pressed', self, 'font_minus')
-	FontPlus.connect('pressed', self, 'font_plus')
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
+	SettingsMenu.add_item('test', [self, 'test'])
+	SettingsMenu.add_item('test2', [self, 'test2'])
+	SettingsMenu.create_submenu('Set Font Size', 'FontSize')
+	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
+	SettingsMenu.add_submenu_item('Font Size +', 'FontSize', [self, 'set_font_size', 1])
+	SettingsMenu.add_submenu_item('Font Size -', 'FontSize', [self, 'set_font_size', -1])
+
 	if !Engine.editor_hint or is_plugin:
 		load_editor_data()
-
-		remove_child(Toolbar)
-		GraphEdit.get_zoom_hbox().add_child(Toolbar)
+		var zoom_hbox = GraphEdit.get_zoom_hbox()
+		var zoom_container = GraphToolbar.get_node('HBox/ZoomContainer')
+		zoom_hbox.get_parent().remove_child(zoom_hbox)
+		zoom_container.add_child(zoom_hbox)
 
 	$AutoSave.connect('timeout', self, 'autosave')
 
@@ -60,11 +62,11 @@ func autosave():
 	save_conversation()
 	save_editor_data()
 
-func font_minus():
-	theme.default_font.size -= 1
+func reset_font_size():
+	theme.default_font.size = 12
 
-func font_plus():
-	theme.default_font.size += 1
+func set_font_size(amount):
+	theme.default_font.size += amount
 
 func dialog_font_minus():
 	DialogBox.theme.default_font.size -= 1
