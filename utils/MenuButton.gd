@@ -10,31 +10,31 @@ signal item_selected(item)
 
 # ******************************************************************************
 
-func _ready():
+func _ready() -> void:
 	popup.connect('index_pressed', self, '_on_index_pressed')
 
-func create_submenu(label, submenu_name) -> PopupMenu:
+func create_submenu(label:String, submenu_name:String) -> PopupMenu:
 	var submenu:PopupMenu = PopupMenu.new()
 	submenu.name = submenu_name
 	submenu.connect('index_pressed', self, '_on_index_pressed', [submenu_name])
-	popup.add_child(submenu, true)
-	popup.add_submenu_item('Set Font Size', submenu_name)
+	popup.add_child(submenu)
+	popup.add_submenu_item(label, submenu_name)
 	return submenu
 
-func add_item(label, cb=null):
+func add_item(label: String, cb:=[]) -> void:
 	popup.add_item(label)
 
 	if cb:
 		callbacks[label] = cb
 
-func add_submenu_item(label: String, submenu_name: String, cb=null):
+func add_submenu_item(label:String, submenu_name:String, cb:=[]) -> void:
 	var submenu:PopupMenu = popup.get_node(submenu_name)
 	submenu.add_item(label)
 	
 	if cb:
 		callbacks[submenu_name + '/' + label] = cb
 
-func _on_index_pressed(idx, submenu_name=''):
+func _on_index_pressed(idx:int, submenu_name:='') -> void:
 	var menu = popup
 	var item = ''
 	if submenu_name:
