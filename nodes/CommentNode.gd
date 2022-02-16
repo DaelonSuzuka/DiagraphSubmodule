@@ -5,20 +5,27 @@ extends 'BaseNode.gd'
 
 onready var ColorPicker = find_node('ColorPickerButton')
 onready var Tooltip = find_node('Tooltip')
+onready var TooltipBG = find_node('TooltipBG')
 
 # ******************************************************************************
 
 func _ready():
 	ColorPicker.get_picker()
 	ColorPicker.get_popup()
-	ColorPicker.connect('color_changed', self, 'set_self_modulate')
+	ColorPicker.connect('color_changed', self, 'set_color')
 	Tooltip.hide()
 
-	if get_parent() is GraphEdit:
+	var parent = get_parent()
+	if parent is GraphEdit:
 		connect('offset_changed', self, 'offset_changed')
-		get_parent().connect('_begin_node_move', self, 'begin_move')
-		get_parent().connect('_end_node_move', self, 'end_move')
-		get_parent().connect('zoom_changed', self, 'zoom_changed')
+		parent.connect('_begin_node_move', self, 'begin_move')
+		parent.connect('_end_node_move', self, 'end_move')
+		parent.connect('zoom_changed', self, 'zoom_changed')
+		zoom_changed(parent.zoom)
+
+func set_color(color):
+	self_modulate = color
+	TooltipBG.modulate = color
 
 # ******************************************************************************
 
@@ -29,6 +36,7 @@ var drag_children := {}
 func begin_move():
 	if !selected:
 		return
+	print('grabbed')
 	dragging = true
 	drag_children.clear()
 	start_pos = offset
@@ -50,15 +58,32 @@ func offset_changed():
 func end_move():
 	if !selected:
 		return
+	print('released')
 	dragging = false
 
 # ******************************************************************************
 
 func zoom_changed(zoom):
-	print(zoom)
 	Tooltip.hide()
+	
+	var stylebox:StyleBox = theme.get_stylebox('comment', 'GraphNode')
+	var width = max(round(1 / zoom), 1)
+	print(width)
+	stylebox.border_width_bottom = width
+	stylebox.border_width_top = width
+	stylebox.border_width_left = width
+	stylebox.border_width_right = width
+
+	TooltipBG.get_stylebox('panel').border_width_bottom = width
+	TooltipBG.get_stylebox('panel').border_width_top = width
+	TooltipBG.get_stylebox('panel').border_width_left = width
+	TooltipBG.get_stylebox('panel').border_width_right = width
+
+	# var tooltip_stylebox = TooltipBG.theme.get_stylebox('comment', 'Panel')
+
 	if zoom < .8:
 		Tooltip.show()
+		Tooltip.theme.default_font.size = round(16 / zoom)
 
 
 # ******************************************************************************
@@ -71,5 +96,6 @@ func get_data():
 func set_data(new_data):
 	if 'color' in new_data:
 		self_modulate = Color(new_data.color)
+		TooltipBG.modulate = Color(new_data.color)
 		ColorPicker.color = Color(new_data.color)
 	.set_data(new_data)
