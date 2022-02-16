@@ -3,6 +3,8 @@ extends GraphNode
 
 # ******************************************************************************
 
+var ContextMenu = preload('../utils/ContextMenu.gd')
+
 var data := {
 	id = 0,
 	type = 'base',
