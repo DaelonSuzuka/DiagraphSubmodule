@@ -57,6 +57,7 @@ var nodes = {}
 var current_node = 0
 var current_line = 0
 var current_data = null
+var currect_character = null
 var caller = null
 var line_count = 0
 var length = -1
@@ -180,15 +181,19 @@ func next():
 
 	var color = Color.white
 
+	currect_character = null
 	if name in Diagraph.characters:
-		var portrait = $Portrait.get_node_or_null(name)
-		if !portrait:
+		var character = $Portrait.get_node_or_null(name)
+		if !character:
 			$Portrait.add_child(Diagraph.characters[name])
-			portrait = $Portrait.get_node_or_null(name)
+			character = $Portrait.get_node_or_null(name)
 		for child in $Portrait.get_children():
-			child.visible = child.name == name
-		if portrait.get('color'):
-			color = portrait.color
+			child.hide()
+			if child.name == name:
+				child.show()
+				currect_character = child
+		if character.get('color'):
+			color = character.color
 
 	$Name/Outline.modulate = color
 	$TextBox/Outline.modulate = color
@@ -248,7 +253,7 @@ func process_text(use_timer=true):
 					next_line.erase(line_index, end - line_index + 2)
 					next_line = next_line.insert(line_index, str(result))
 					$DebugLog.text += '\nexpansion: ' + str(result)
-					# process_text()
+					process_text()
 			else:
 				var end = next_line.findn('}', line_index)
 				if end != -1:
@@ -257,7 +262,7 @@ func process_text(use_timer=true):
 					var cmd = command.lstrip('{').rstrip('}')
 					var result = Eval.evaluate(cmd, self, Diagraph.get_locals())
 					$DebugLog.text += '\ncommand: ' + command
-					# process_text()
+					process_text()
 		'<': # reserved for future use
 			var end = next_line.findn('>', line_index)
 			if end != -1:
@@ -286,13 +291,18 @@ func process_text(use_timer=true):
 		'\\': # escape the next character
 			$DebugLog.text += '\nescape'
 			line_index += 1
-			text_box.bbcode_text += next_line[line_index]
-			emit_signal('character_added', next_line[line_index])
+			print_char(next_line[line_index])
 			line_index += 1
 		_: # not a special character, just print it
-			text_box.bbcode_text += next_char
-			emit_signal('character_added', next_char)
+			print_char(next_char)
 			line_index += 1
 
 	if use_timer:
 		TextTimer.start(cooldown)
+
+func print_char(c):
+	if currect_character and currect_character.has_method('blip'):
+		currect_character.blip(c)
+	
+	text_box.bbcode_text += c
+	emit_signal('character_added', c)
