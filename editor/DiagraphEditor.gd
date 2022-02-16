@@ -14,6 +14,9 @@ onready var DialogFontMinus = find_node('DialogFontMinus')
 onready var DialogFontPlus = find_node('DialogFontPlus')
 onready var GraphToolbar = find_node('GraphToolbar')
 onready var DialogBox = find_node('DialogBox')
+onready var ToggleRightPanel = find_node('ToggleRightPanel')
+onready var ToggleLeftPanel = find_node('ToggleLeftPanel')
+onready var LeftPanelSplit: HSplitContainer = find_node('LeftPanelSplit')
 onready var SettingsMenu:MenuButton = find_node('SettingsMenu')
 
 var is_plugin = false
@@ -42,6 +45,8 @@ func _ready():
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
+	ToggleLeftPanel.connect('pressed', self, 'toggle_left_panel')
+
 	SettingsMenu.add_check_item('Scroll While Zooming', [GraphEdit, 'set_zoom_scroll'])
 	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
 	sub.hide_on_item_selection = false
@@ -61,6 +66,9 @@ func _ready():
 func autosave():
 	save_conversation()
 	save_editor_data()
+
+func toggle_left_panel():
+	LeftPanelSplit.collapsed = !LeftPanelSplit.collapsed
 
 func reset_font_size():
 	theme.default_font.size = 12
@@ -181,6 +189,8 @@ func save_editor_data():
 	editor_data['current_conversation'] = current_conversation
 	editor_data['font_size'] = theme.default_font.size
 	editor_data['zoom_scroll'] = GraphEdit.zoom_scroll
+	editor_data['left_panel_size'] = LeftPanelSplit.split_offset
+	editor_data['left_panel_collapsed'] = LeftPanelSplit.collapsed
 	editor_data[current_conversation] = GraphEdit.get_data()
 	Diagraph.save_json(editor_data_file_name, editor_data)
 
@@ -201,3 +211,8 @@ func load_editor_data():
 		var state = editor_data['zoom_scroll']
 		GraphEdit.zoom_scroll = state
 		SettingsMenu.set_item_checked('Scroll While Zooming', state)
+
+	if 'left_panel_size' in editor_data:
+		LeftPanelSplit.split_offset = editor_data['left_panel_size']
+	if 'left_panel_collapsed' in editor_data:
+		LeftPanelSplit.collapsed = editor_data['left_panel_collapsed']
