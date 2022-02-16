@@ -20,6 +20,10 @@ var nodes = {}
 
 signal zoom_changed(zoom)
 
+var zoom_scroll := false setget set_zoom_scroll
+func set_zoom_scroll(state):
+	zoom_scroll = state
+
 # ******************************************************************************
 
 func _ready() -> void:
@@ -243,9 +247,10 @@ func do_zoom_scroll(step: int) -> void:
 	var new_zoom = zoom * pow(zoom_step, step)
 	zoom = new_zoom
 
-	var zoom_center = anchor - (scroll_offset + (rect_size / 2))
-	var ratio = 1.0 - zoom / old_zoom
-	# scroll_offset -= zoom_center * ratio
+	if zoom_scroll:
+		var zoom_center = anchor - (scroll_offset + (rect_size / 2))
+		var ratio = 1.0 - zoom / old_zoom
+		scroll_offset -= zoom_center * ratio
 
 	emit_signal('zoom_changed', zoom)
 

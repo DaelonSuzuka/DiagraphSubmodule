@@ -42,6 +42,7 @@ func _ready():
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
+	SettingsMenu.add_check_item('Scroll While Zooming', [GraphEdit, 'set_zoom_scroll'])
 	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
 	sub.hide_on_item_selection = false
 	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
@@ -179,6 +180,7 @@ func save_editor_data():
 		return
 	editor_data['current_conversation'] = current_conversation
 	editor_data['font_size'] = theme.default_font.size
+	editor_data['zoom_scroll'] = GraphEdit.zoom_scroll
 	editor_data[current_conversation] = GraphEdit.get_data()
 	Diagraph.save_json(editor_data_file_name, editor_data)
 
@@ -194,3 +196,8 @@ func load_editor_data():
 
 	if 'font_size' in editor_data:
 		theme.default_font.size = editor_data['font_size']
+
+	if 'zoom_scroll' in editor_data:
+		var state = editor_data['zoom_scroll']
+		GraphEdit.zoom_scroll = state
+		SettingsMenu.set_item_checked('Scroll While Zooming', state)
