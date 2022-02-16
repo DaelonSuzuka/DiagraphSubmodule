@@ -42,8 +42,6 @@ func _ready():
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
-	SettingsMenu.add_item('test', [self, 'test'])
-	SettingsMenu.add_item('test2', [self, 'test2'])
 	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
 	sub.hide_on_item_selection = false
 	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
