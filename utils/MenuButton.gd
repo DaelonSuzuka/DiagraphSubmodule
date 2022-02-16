@@ -27,6 +27,12 @@ func add_item(label: String, cb:=[]) -> void:
 	if cb:
 		callbacks[label] = cb
 
+func add_check_item(label: String, cb:=[]):
+	popup.add_check_item(label)
+
+	if cb:
+		callbacks[label] = cb
+
 func add_submenu_item(label:String, submenu_name:String, cb:=[]) -> void:
 	var submenu:PopupMenu = popup.get_node(submenu_name)
 	submenu.add_item(label)
