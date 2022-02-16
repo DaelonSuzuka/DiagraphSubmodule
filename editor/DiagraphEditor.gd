@@ -44,7 +44,8 @@ func _ready():
 
 	SettingsMenu.add_item('test', [self, 'test'])
 	SettingsMenu.add_item('test2', [self, 'test2'])
-	SettingsMenu.create_submenu('Set Font Size', 'FontSize')
+	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
+	sub.hide_on_item_selection = false
 	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
 	SettingsMenu.add_submenu_item('Font Size +', 'FontSize', [self, 'set_font_size', 1])
 	SettingsMenu.add_submenu_item('Font Size -', 'FontSize', [self, 'set_font_size', -1])
