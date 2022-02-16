@@ -245,7 +245,7 @@ func do_zoom_scroll(step: int) -> void:
 
 	var zoom_center = anchor - (scroll_offset + (rect_size / 2))
 	var ratio = 1.0 - zoom / old_zoom
-	scroll_offset -= zoom_center * ratio
+	# scroll_offset -= zoom_center * ratio
 
 	emit_signal('zoom_changed', zoom)
 
