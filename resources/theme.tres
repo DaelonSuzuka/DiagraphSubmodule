@@ -1412,8 +1412,6 @@ shadow_size = 4
 
 [sub_resource type="DynamicFont" id=1495]
 size = 12
-use_mipmaps = true
-use_filter = true
 font_data = ExtResource( 3 )
 
 [resource]
