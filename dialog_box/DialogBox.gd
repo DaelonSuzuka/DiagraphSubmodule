@@ -53,11 +53,22 @@ func remove_options() -> void:
 
 # ******************************************************************************
 
+var current_character = null
+
+func character_talk(c):
+	if current_character and current_character.has_method('talk'):
+		current_character.talk(c)
+
+func character_idle():
+	if current_character and current_character.has_method('idle'):
+		current_character.idle()
+
+# ******************************************************************************
+
 var nodes = {}
 var current_node = 0
 var current_line = 0
 var current_data = null
-var currect_character = null
 var caller = null
 var line_count = 0
 var length = -1
@@ -181,7 +192,7 @@ func next():
 
 	var color = Color.white
 
-	currect_character = null
+	current_character = null
 	if name in Diagraph.characters:
 		var character = $Portrait.get_node_or_null(name)
 		if !character:
@@ -191,7 +202,7 @@ func next():
 			child.hide()
 			if child.name == name:
 				child.show()
-				currect_character = child
+				current_character = child
 		if character.get('color'):
 			color = character.color
 
@@ -234,6 +245,7 @@ func speed(value=original_cooldown):
 func process_text(use_timer=true):
 	if line_index == next_line.length():
 		emit_signal('line_finished')
+		character_idle()
 		TextTimer.stop()
 		line_active = false
 		return 
@@ -287,6 +299,7 @@ func process_text(use_timer=true):
 		'_': # pause
 			cooldown = 0.25
 			$DebugLog.text += '\npause'
+			character_idle()
 			line_index += 1
 		'\\': # escape the next character
 			$DebugLog.text += '\nescape'
@@ -301,8 +314,7 @@ func process_text(use_timer=true):
 		TextTimer.start(cooldown)
 
 func print_char(c):
-	if currect_character and currect_character.has_method('blip'):
-		currect_character.blip(c)
+	character_talk(c)
 	
 	text_box.bbcode_text += c
 	emit_signal('character_added', c)

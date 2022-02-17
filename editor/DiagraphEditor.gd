@@ -165,6 +165,7 @@ func character_added(path):
 # ******************************************************************************
 
 func run():
+	Diagraph.load_characters()
 	var selection = GraphEdit.get_selected_nodes()
 	if selection.size() == 1:
 		var node = selection[0]
