@@ -84,7 +84,7 @@ __meta__ = {
 
 [node name="Sidebar" type="Control" parent="LeftPanelSplit"]
 margin_right = 150.0
-margin_bottom = 596.0
+margin_bottom = 266.0
 
 [node name="Panel" type="Panel" parent="LeftPanelSplit/Sidebar"]
 anchor_right = 1.0
@@ -118,7 +118,7 @@ text = "wut"
 
 [node name="Tree" type="Tree" parent="LeftPanelSplit/Sidebar/VBoxContainer"]
 margin_right = 150.0
-margin_bottom = 596.0
+margin_bottom = 266.0
 size_flags_vertical = 3
 allow_rmb_select = true
 hide_root = true
@@ -138,8 +138,8 @@ __meta__ = {
 
 [node name="GraphContainer" type="Control" parent="LeftPanelSplit"]
 margin_left = 158.0
-margin_right = 1020.0
-margin_bottom = 596.0
+margin_right = 476.0
+margin_bottom = 266.0
 
 [node name="GraphEdit" type="GraphEdit" parent="LeftPanelSplit/GraphContainer"]
 anchor_right = 1.0
@@ -196,7 +196,6 @@ margin_left = 34.0
 margin_right = 91.0
 margin_bottom = 30.0
 text = "Settings"
-items = [ "Scroll While Zooming", null, 1, false, false, 0, 0, null, "", false, "Set Font Size", null, 0, false, false, 1, 0, null, "FontSize", false ]
 script = ExtResource( 7 )
 
 [node name="Run" type="Button" parent="LeftPanelSplit/GraphContainer/GraphToolbar/HBox"]
@@ -208,13 +207,13 @@ flat = true
 
 [node name="Spacer" type="Control" parent="LeftPanelSplit/GraphContainer/GraphToolbar/HBox"]
 margin_left = 132.0
-margin_right = 812.0
+margin_right = 268.0
 margin_bottom = 30.0
 size_flags_horizontal = 3
 
 [node name="ToggleRightPanel" type="Button" parent="LeftPanelSplit/GraphContainer/GraphToolbar/HBox"]
-margin_left = 816.0
-margin_right = 842.0
+margin_left = 272.0
+margin_right = 298.0
 margin_bottom = 30.0
 toggle_mode = true
 text = ">>"

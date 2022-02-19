@@ -24,6 +24,10 @@ var zoom_scroll := false setget set_zoom_scroll
 func set_zoom_scroll(state):
 	zoom_scroll = state
 
+signal node_created(node)
+signal node_deleted(id)
+signal node_renamed(old, new)
+
 # ******************************************************************************
 
 func _ready() -> void:
@@ -59,7 +63,7 @@ var ctx = null
 var ctx_position := Vector2()
 
 func dismiss_ctx() -> void:
-	if ctx:
+	if is_instance_valid(ctx):
 		ctx.queue_free()
 		ctx = null
 
@@ -121,14 +125,32 @@ func create_node(data=null) -> Node:
 			data.id = get_id()
 		node.set_data(data)
 	nodes[str(node.data.id)] = node
+	emit_signal('node_created', node)
 	return node
 	
 func delete_node(node) -> void:
+	# if we get passed a node id, get the actual node instead
+	if str(node) in nodes:
+		node = nodes[str(node)]
+
 	for con in get_connection_list():
 		if con["from"] == node.name or con["to"] == node.name:
 			request_disconnection(con["from"], con["from_port"], con["to"], con["to_port"])
-	nodes.erase(node.data.id)
+	var id = node.data.id
+	nodes.erase(id)
 	node.queue_free()
+	emit_signal('node_deleted', id)
+
+func rename_node(id, new_name):
+	if str(id) in nodes:
+		nodes[str(id)].rename(new_name)
+
+func select_node(node):
+	# if we get passed a node id, get the actual node instead
+	if str(node) in nodes:
+		node = nodes[str(node)]
+	if node is GraphNode:
+		set_selected(node)
 
 # ******************************************************************************
 
@@ -230,6 +252,33 @@ func get_selected_nodes() -> Array:
 		if child is GraphNode and child.is_selected():
 			selected_nodes.append(child)
 	return selected_nodes
+
+func get_node_by_name(name:String):
+	for node in nodes.values():
+		if is_instance_valid(node) and node.data.name == name:
+			return node
+	return null
+
+func focus_node(name:String):
+	var node = get_node_by_name(name)
+	if node:
+		var node_center = (node.offset + (node.rect_size / 2)) * zoom
+		scroll_offset = node_center - (rect_size / 2)
+
+		while (node.rect_size.y) * zoom > (rect_size.y * 0.9):
+			zoom -= zoom_step
+
+		if zoom < 1.0:
+			zoom = 1.0
+
+# func focus_selected_nodes():
+# 	var selected_nodes = get_selected_nodes()
+# 	if selected_nodes:
+# 		var center = Vector2()
+# 		for node in selected_nodes:
+# 			center += (node.offset + (node.rect_size / 2)) * zoom
+
+# 		scroll_offset = center - (rect_size / 2)
 
 # ------------------------------------------------------------------------------
 

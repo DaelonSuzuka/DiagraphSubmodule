@@ -30,6 +30,8 @@ func _ready() -> void:
 	connect('resize_request', self, 'resize_request')
 	connect('gui_input', self, '_gui_input')
 
+	Title.connect('text_changed', self, 'renamed')
+
 func resize_request(new_minsize: Vector2) -> void:
 	if get_parent().use_snap:
 		var snap = get_parent().get_snap()
@@ -116,15 +118,20 @@ func set_id(id) -> void:
 	name = str(id)
 	Id.text = str(data.id) + " | "
 
-func update_title() -> void:
-	Title.text = data.name
+func rename(new_name):
+	Title.text = new_name
+	renamed(new_name)
+
+func renamed(new_name):
+	Parent.emit_signal('node_renamed', data.name, new_name)
+	data.name = new_name
 
 # ******************************************************************************
 
 func get_data() -> Dictionary:
 	data.offset = var2str(offset)
 	data.rect_size = var2str(rect_size)
-	data.name = $Body/Toolbar/Title.text
+	data.name = Title.text
 	return data.duplicate(true)
 
 func set_data(new_data: Dictionary) -> GraphNode:
@@ -139,7 +146,7 @@ func set_data(new_data: Dictionary) -> GraphNode:
 		set_id(new_data.id)
 	if 'name' in new_data:
 		data.name = new_data.name
-		update_title()
+		rename(new_data.name)
 	if 'offset' in new_data:
 		offset = str2var(new_data.offset)
 	if 'rect_size' in new_data:

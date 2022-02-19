@@ -39,13 +39,20 @@ func _ready():
 	Tree.connect('conversation_created', self, 'create_conversation')
 	Tree.connect('conversation_deleted', self, 'delete_conversation')
 	Tree.connect('conversation_renamed', self, 'rename_conversation')
-	Tree.connect('card_selected', self, 'card_selected')
-	Tree.connect('card_renamed', self, 'card_renamed')
+	Tree.connect('card_selected', GraphEdit, 'select_node')
+	Tree.connect('card_focused', self, 'focus_card')
+	Tree.connect('card_renamed', GraphEdit, 'rename_node')
+	Tree.connect('card_deleted', GraphEdit, 'delete_node')
 	
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
 	ToggleLeftPanel.connect('pressed', self, 'toggle_left_panel')
+
+	GraphEdit.connect('node_renamed', self, 'node_renamed')
+	GraphEdit.connect('node_created', self, 'node_created')
+	GraphEdit.connect('node_deleted', self, 'node_deleted')
+	GraphEdit.connect('node_selected', self, 'node_selected')
 
 	SettingsMenu.add_check_item('Scroll While Zooming', [GraphEdit, 'set_zoom_scroll'])
 	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
@@ -96,6 +103,10 @@ func change_conversation(path):
 	save_editor_data()
 	load_conversation(path)
 
+	var parts = path.split(':')
+	if len(parts) > 1:
+		GraphEdit.focus_node(parts[1])
+
 func load_conversation(path):
 	var parts = path.split(':')
 	var name = parts[0]
@@ -145,13 +156,33 @@ func conversation_selected(path):
 	pass
 	# print('conversation_selected: ', path)
 
-func card_selected(path):
-	pass
-	# print('conversation_selected: ', path)
+func focus_card(path):
+	var parts = path.split(':')
+	if parts[0] != current_conversation:
+		save_conversation()
+		save_editor_data()
+		load_conversation(parts[0])
+	if len(parts) > 1:
+		GraphEdit.focus_node(parts[1])
 
-func card_renamed(old, new):
-	pass
-	# prints('card_renamed:', old, new)
+func node_selected(node):
+	var path = current_conversation + '/' + node.data.name
+	Tree.select_item(path)
+
+func node_deleted(id):
+	save_conversation()
+	Tree.delete_item(id)
+
+func node_renamed(old, new):
+	save_conversation()
+	Tree.refresh()
+
+func node_created(path):
+	save_conversation()
+	Tree.refresh()
+
+func select_card(path):
+	prints('select_card', path)
 
 # ******************************************************************************
 
