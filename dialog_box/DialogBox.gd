@@ -4,7 +4,6 @@ extends Control
 # ******************************************************************************
 
 var OptionButton = preload('res://addons/diagraph/dialog_box/OptionButton.tscn')
-var Eval = preload('res://addons/diagraph/utils/Eval.gd').new()
 var option_button = null
 
 var TextTimer := Timer.new()
@@ -186,7 +185,7 @@ func next():
 				var branch = current_data.branches[b]
 				if branch.next:
 					if branch.condition:
-						var result = Eval.evaluate(branch.condition, self, Diagraph.get_locals())
+						var result = evaluate(branch.condition)
 						if !(result is String) and result == true:
 							current_data.next = branch.next
 							break
@@ -203,7 +202,7 @@ func next():
 					var result = true
 					var condition = current_data.choices[c].condition
 					if condition:
-						result = Eval.evaluate(condition, self, Diagraph.get_locals())
+						result = evaluate(condition)
 					var option = add_option(current_data.choices[c].choice, c)
 					if !result:
 						option.set_disabled(true)
@@ -230,7 +229,7 @@ func next():
 		name = parts[0]
 		if '.' in name:
 			var subparts = name.split('.')
-			Eval.evaluate(name, self, Diagraph.get_locals())
+			evaluate(name)
 			name = subparts[0]
 		else:
 			Diagraph.characters[name].idle()
@@ -240,7 +239,7 @@ func next():
 
 		if name in Diagraph.characters:
 			current_character = null
-			line = line.trim_prefix(parts[0]).trim_prefix(':').trim_prefix(' ')
+			line = strip_name(line)
 			var character = $Portrait.get_node_or_null(name)
 			if !character:
 				$Portrait.add_child(Diagraph.characters[name])
@@ -314,7 +313,7 @@ func process_text(use_timer=true):
 					var command = next_line.substr(line_index, end - line_index + 2)
 					line_index = end + 2
 					var cmd = command.lstrip('{{').rstrip('}}')
-					var result = Eval.evaluate(cmd, self, Diagraph.get_locals())
+					var result = evaluate(cmd)
 					next_line.erase(line_index, end - line_index + 2)
 					next_line = next_line.insert(line_index, str(result))
 					$DebugLog.text += '\nexpansion: ' + str(result)
@@ -325,7 +324,7 @@ func process_text(use_timer=true):
 					var command = next_line.substr(line_index, end - line_index + 1)
 					line_index = end + 1
 					var cmd = command.lstrip('{').rstrip('}')
-					var result = Eval.evaluate(cmd, self, Diagraph.get_locals())
+					var result = evaluate(cmd)
 					$DebugLog.text += '\ncommand: ' + command
 					process_text()
 		'<': # reserved for future use
@@ -372,3 +371,16 @@ func print_char(c):
 	
 	text_box.bbcode_text += c
 	emit_signal('character_added', c)
+
+# ******************************************************************************
+
+func evaluate(input:String):
+	var ctx = Diagraph.sandbox.get_eval_context()
+
+	ctx.variable('_original_cooldown', original_cooldown)
+	ctx.method('func speed(value=_original_cooldown):', [
+		'_parent.next_char_cooldown = value',
+	])
+
+	var context = ctx.build(self)
+	return Diagraph.sandbox.evaluate(input, context)
