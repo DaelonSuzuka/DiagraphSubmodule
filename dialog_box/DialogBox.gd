@@ -74,6 +74,34 @@ func character_idle():
 		current_character.idle()
 
 # ******************************************************************************
+# utils
+
+func strip_name(text):
+	return text.split(':')[1].trim_prefix(':').trim_prefix(' ')
+
+func split_text(text):
+	var parts = text.split('\n')
+	var original = -1
+	var parts_to_concat = []
+
+	for i in len(parts):
+		if parts[i].ends_with('\\'):
+			if original == -1:
+				original = i
+			parts_to_concat.append(i + 1)
+		elif original != -1:
+			for x in parts_to_concat:
+				if x < len(parts):
+					var next_part = parts[x]
+					if ':' in next_part:
+						next_part = strip_name(next_part)
+					parts[original] += '\n' + next_part
+					parts[x] = '#' + parts[x]
+			original = -1
+
+	return parts
+
+# ******************************************************************************
 
 var nodes = {}
 var current_node = 0
@@ -135,20 +163,6 @@ func start(conversation, options={}):
 
 	next()
 	show()
-
-func split_text(text):
-
-	print(text)
-	if '\\\n' in text:
-		print('found esc newline')
-		text.replace('\\\n', '%%')
-	print(text)
-
-	var parts = text.split('\n')
-	for part in parts:
-		part.replace('%%', '\\\n')
-	print(parts)
-	return parts
 
 func stop():
 	active = false
