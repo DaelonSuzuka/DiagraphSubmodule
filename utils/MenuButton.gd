@@ -11,6 +11,9 @@ signal item_selected(item)
 # ******************************************************************************
 
 func _ready() -> void:
+	popup.clear()
+	for child in popup.get_children():
+		child.queue_free()
 	popup.connect('index_pressed', self, '_on_index_pressed')
 
 func create_submenu(label:String, submenu_name:String) -> PopupMenu:

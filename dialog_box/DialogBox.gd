@@ -5,6 +5,7 @@ extends Control
 
 var OptionButton = preload('res://addons/diagraph/dialog_box/OptionButton.tscn')
 var Eval = preload('res://addons/diagraph/utils/Eval.gd').new()
+var option_button = null
 
 var TextTimer := Timer.new()
 var original_cooldown := 0.05
@@ -26,6 +27,11 @@ func _ready():
 	TextTimer.connect('timeout', self, 'process_text')
 	TextTimer.one_shot = true
 
+	var opt_btn = get_node_or_null('OptionButton')
+	if opt_btn:
+		remove_child(opt_btn)
+		option_button = opt_btn
+
 func _input(event):
 	if !visible or !active or waiting_for_choice:
 		return
@@ -37,7 +43,11 @@ func _input(event):
 # ******************************************************************************
 
 func add_option(option, value=null):
-	var button = OptionButton.instance()
+	var button
+	if option_button:
+		button = option_button.duplicate()
+	else:
+		button = OptionButton.instance()
 
 	var arg = value if value else option
 	button.connect("pressed", self, "option_selected", [arg])
@@ -76,7 +86,7 @@ var length = -1
 func start(conversation, options={}):
 	var name = ''
 	var entry = ''
-	var line = 0
+	var line_number = 0
 	remove_options()
 
 	if conversation.begins_with('res://'):
@@ -87,7 +97,7 @@ func start(conversation, options={}):
 		if parts.size() >= 2:
 			entry = parts[1]
 		if parts.size() >= 3:
-			line = int(parts[2])
+			line_number = int(parts[2])
 
 	active = true
 	caller = null
@@ -107,11 +117,11 @@ func start(conversation, options={}):
 		current_node = nodes.keys()[0]
 
 	current_data = nodes[current_node]
-	current_data.text = current_data.text.split('\n')
+	current_data.text = split_text(current_data.text)
 
 	line_count = 0
-	current_line = line
-	if line == -1:
+	current_line = line_number
+	if line_number == -1 or line_number > current_data.text.size():
 		current_line = current_data.text.size() - 1
 
 	if 'caller' in options:
@@ -125,6 +135,20 @@ func start(conversation, options={}):
 
 	next()
 	show()
+
+func split_text(text):
+
+	print(text)
+	if '\\\n' in text:
+		print('found esc newline')
+		text.replace('\\\n', '%%')
+	print(text)
+
+	var parts = text.split('\n')
+	for part in parts:
+		part.replace('%%', '\\\n')
+	print(parts)
+	return parts
 
 func stop():
 	active = false
@@ -175,7 +199,7 @@ func next():
 
 		current_node = current_data.next
 		current_data = nodes[current_node]
-		current_data.text = current_data.text.split('\n')
+		current_data.text = split_text(current_data.text)
 		current_line = 0
 
 	var line = current_data.text[current_line]
@@ -184,27 +208,37 @@ func next():
 		next()
 		return
 
+	var color = Color.white
 	var name = ''
 	var parts = line.split(':')
+	
 	if parts.size() > 1:
 		name = parts[0]
-		line = line.lstrip(parts[0] + ':')
+		if '.' in name:
+			var subparts = name.split('.')
+			Eval.evaluate(name, self, Diagraph.get_locals())
+			name = subparts[0]
+		else:
+			Diagraph.characters[name].idle()
 
-	var color = Color.white
+		if '/' in name:
+			print('multiple characters')
 
-	current_character = null
-	if name in Diagraph.characters:
-		var character = $Portrait.get_node_or_null(name)
-		if !character:
-			$Portrait.add_child(Diagraph.characters[name])
-			character = $Portrait.get_node_or_null(name)
-		for child in $Portrait.get_children():
-			child.hide()
-			if child.name == name:
-				child.show()
-				current_character = child
-		if character.get('color'):
-			color = character.color
+		if name in Diagraph.characters:
+			current_character = null
+			line = line.trim_prefix(parts[0]).trim_prefix(':').trim_prefix(' ')
+			var character = $Portrait.get_node_or_null(name)
+			if !character:
+				$Portrait.add_child(Diagraph.characters[name])
+				character = $Portrait.get_node_or_null(name)
+			if character.get('color'):
+				color = character.color
+
+	for child in $Portrait.get_children():
+		child.hide()
+		if child.name == name:
+			child.show()
+			current_character = child
 
 	$Name/Outline.modulate = color
 	$TextBox/Outline.modulate = color
@@ -218,7 +252,12 @@ func next():
 func option_selected(choice):
 	remove_options()
 	waiting_for_choice = false
-	current_node = current_data.choices[choice].next
+	var next_node = current_data.choices[choice].next
+	if !next_node:
+		stop()
+		return
+		
+	current_node = next_node
 	current_line = 0
 	current_data = nodes[current_node].duplicate(true)
 	current_data.text = current_data.text.split('\n')
@@ -304,8 +343,9 @@ func process_text(use_timer=true):
 		'\\': # escape the next character
 			$DebugLog.text += '\nescape'
 			line_index += 1
-			print_char(next_line[line_index])
-			line_index += 1
+			if line_index < next_line.length():
+				print_char(next_line[line_index])
+				line_index += 1
 		_: # not a special character, just print it
 			print_char(next_char)
 			line_index += 1

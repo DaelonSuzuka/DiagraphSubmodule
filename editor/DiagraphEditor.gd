@@ -30,7 +30,6 @@ func _ready():
 	Stop.connect('pressed', self, 'stop')
 	Next.connect('pressed', self, 'next')
 	Debug.connect('toggled', $Preview/DialogBox/DebugLog, 'set_visible')
-	DialogBox.connect('done', self, 'stop')
 
 	Preview.hide()
 
@@ -203,6 +202,14 @@ func run():
 		save_conversation()
 		save_editor_data()
 		$Preview.show()
+
+		if DialogBox:
+			Preview.remove_child(DialogBox)
+			DialogBox.queue_free()
+			DialogBox = null
+		DialogBox = load('res://addons/diagraph/dialog_box/DialogBox.tscn').instance()
+		Preview.add_child(DialogBox)
+		DialogBox.connect('done', self, 'stop')
 		DialogBox.start(current_conversation + ':' + node.name)
 	
 func stop():
