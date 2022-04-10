@@ -3,27 +3,28 @@ extends EditorPlugin
 
 # ******************************************************************************
 
-var singleton_path = "res://addons/diagraph/DiagraphSingleton.gd"
+const singleton_path = "res://addons/diagraph/DiagraphSingleton.gd"
 
-var inspector_class = "res://addons/diagraph/DiagraphInspectorPlugin.gd"
+const inspector_class = "res://addons/diagraph/DiagraphInspectorPlugin.gd"
 var inspector_instance
 
-const editor_class = preload("res://addons/diagraph/editor/DiagraphEditor.tscn")
+const editor_class = "res://addons/diagraph/editor/DiagraphEditor.tscn"
 var editor_instance
 var editor_button
 
 # ******************************************************************************
 
 func _enter_tree():
+	name = 'Diagraph'
 	add_autoload_singleton('Diagraph', singleton_path)
-	Diagraph.is_plugin = true
+	Diagraph.plugin = self
 
 	inspector_instance = load(inspector_class).new()
 	inspector_instance.plugin = self
 	add_inspector_plugin(inspector_instance)
 
-	editor_instance = editor_class.instance()
-	editor_instance.is_plugin = true
+	editor_instance = load(editor_class).instance()
+	editor_instance.plugin = self
 	editor_button = add_control_to_bottom_panel(editor_instance, 'Diagraph')
 
 func _exit_tree():
@@ -39,4 +40,9 @@ func show_conversation(conversation):
 	editor_instance.change_conversation(conversation)
 
 func get_plugin_icon():
-	return preload("resources/diagraph_icon.png")	
+	return load("resources/diagraph_icon.png")	
+
+func apply_changes():
+	editor_instance.save_conversation()
+	editor_instance.save_editor_data()
+	editor_button.text = 'Diagraph'

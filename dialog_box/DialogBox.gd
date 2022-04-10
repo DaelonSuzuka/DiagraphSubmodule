@@ -7,37 +7,53 @@ var OptionButton = preload('res://addons/diagraph/dialog_box/OptionButton.tscn')
 var option_button = null
 
 var TextTimer := Timer.new()
+var DismissTimer := Timer.new()
 var original_cooldown := 0.05
 var next_char_cooldown := original_cooldown
 
-signal done
-signal line_finished
+signal done()
+signal line_finished()
 signal character_added(c)
 
-onready var text_box = $TextBox
+onready var Name = find_node('Name')
+onready var NameOutline = find_node('NameOutline')
+onready var TextBox = find_node('TextBox')
+onready var TextBoxOutline = find_node('TextBoxOutline')
+onready var DebugLog = find_node('DebugLog')
+onready var Options = find_node('Options')
+onready var Portrait = find_node('Portrait')
 
 var waiting_for_choice := false
 var active := false
+var direct_input := true
 
 # ******************************************************************************
 
 func _ready():
 	add_child(TextTimer)
-	TextTimer.connect('timeout', self, 'process_text')
+	TextTimer.connect('timeout', self, 'next_char')
 	TextTimer.one_shot = true
+	add_child(DismissTimer)
+	DismissTimer.connect('timeout', self, 'next_line')
+	DismissTimer.one_shot = true
 
 	var opt_btn = get_node_or_null('OptionButton')
 	if opt_btn:
 		remove_child(opt_btn)
 		option_button = opt_btn
 
+# input handling shim 
 func _input(event):
+	if direct_input:
+		handle_input(event)
+
+func handle_input(event):
 	if !visible or !active or waiting_for_choice:
 		return
 	if event is InputEventKey and event.pressed:
 		if event.as_text() == 'Enter':
 			accept_event()
-			next()
+			next_line()
 
 # ******************************************************************************
 
@@ -52,11 +68,11 @@ func add_option(option, value=null):
 	button.connect("pressed", self, "option_selected", [arg])
 	button.text = option
 
-	$Options.add_child(button)
+	Options.add_child(button)
 	return button
 
 func remove_options() -> void:
-	for child in $Options.get_children():
+	for child in Options.get_children():
 		if child is Button:
 			child.queue_free()
 
@@ -109,30 +125,34 @@ var current_data = null
 var caller = null
 var line_count = 0
 var length = -1
+var popup = false
+var popup_timeout = 1.0
 
 func start(conversation, options={}):
+	# reset stuff
 	var name = ''
 	var entry = ''
 	var line_number = 0
+	active = true
+	caller = null
+	NameOutline.modulate = Color.white
+	TextBoxOutline.modulate = Color.white
 	remove_options()
 
+	# parse conversation string
 	if conversation.begins_with('res://'):
 		name = conversation
 	else:
 		var parts = conversation.split(':')
-		name = Diagraph.name_to_path(parts[0])
+		name = Diagraph.conversations[parts[0]]
 		if parts.size() >= 2:
 			entry = parts[1]
 		if parts.size() >= 3:
 			line_number = int(parts[2])
 
-	active = true
-	caller = null
-	$Name/Outline.modulate = Color.white
-	$TextBox/Outline.modulate = Color.white
+	nodes = Diagraph.load_conversation(name, {})
 
-	nodes = Diagraph.load_json(name, {})
-
+	# identify starting node
 	current_node = null
 	if entry:
 		for node in nodes.values():
@@ -143,6 +163,7 @@ func start(conversation, options={}):
 	else:
 		current_node = nodes.keys()[0]
 
+	# set up initial data
 	current_data = nodes[current_node]
 	current_data.text = split_text(current_data.text)
 
@@ -151,8 +172,13 @@ func start(conversation, options={}):
 	if line_number == -1 or line_number > current_data.text.size():
 		current_line = current_data.text.size() - 1
 
+	# parse options
 	if 'caller' in options:
 		caller = options.caller
+
+	if 'popup' in options:
+		popup = true
+		popup_timeout = options.popup
 
 	length = -1
 	if 'length' in options:
@@ -160,7 +186,7 @@ func start(conversation, options={}):
 	if 'len' in options:
 		length = options.len
 
-	next()
+	next_line()
 	show()
 
 func stop():
@@ -169,10 +195,18 @@ func stop():
 	remove_options()
 	emit_signal('done')
 
-func next():
+# ******************************************************************************
+
+func set_node(next_node):
+	current_node = next_node
+	current_line = 0
+	current_data = nodes[current_node].duplicate(true)
+	current_data.text = split_text(current_data.text)
+
+func next_line():
 	if line_active:
 		while line_active:
-			process_text(false)
+			next_char(false)
 		return
 
 	if length > 0 and line_count >= length:
@@ -206,24 +240,61 @@ func next():
 					var option = add_option(current_data.choices[c].choice, c)
 					if !result:
 						option.set_disabled(true)
-			if $Options.get_child_count():
-				$Options.get_child(0).grab_focus()
+			if Options.get_child_count():
+				Options.get_child(0).grab_focus()
 			return
 
-		current_node = current_data.next
-		current_data = nodes[current_node]
-		current_data.text = split_text(current_data.text)
-		current_line = 0
+		set_node(current_data.next)
 
-	var line = current_data.text[current_line]
-	if line.length() == 0 or line.begins_with('#'):
-		current_line += 1
-		next()
-		return
+	var new_line = current_data.text[current_line]
 
+	# check for line skip
+	# TODO: check for lines that only contain a code block
+	# TODO: skip lines that are only whitespace
+	var skip := false
+	if new_line.length() == 0 or new_line.begins_with('#'):
+		skip = true
+
+	if new_line.begins_with('-'):
+		var choices = {}
+		var lookahead = current_line
+
+		while lookahead < current_data.text.size():
+			var lookahead_line = current_data.text[lookahead]
+			var choice_number = 1
+			lookahead += 1
+			print(lookahead_line)
+			if lookahead_line.begins_with('\t'):
+				continue
+			if lookahead_line.begins_with('-'):
+				var parts = lookahead_line.lstrip('- ').split('=>')
+				var choice = {
+					choice = parts[0],
+					condition = '',
+					next = '',
+				}
+				if current_data.text[lookahead + 1].begins_with('\t'):
+					choice.next = lookahead + 1
+				if parts.size() == 2:
+					choice.next = parts[1]
+				choices[str(choice_number)] = choice
+				choice_number += 1
+
+		# waiting_for_choice = true
+		# for choice in choices:
+		# 	var result = true
+		# 	var condition = choice.condition
+		# 	if condition:
+		# 		result = evaluate(condition)
+		# 	var option = add_option(choice.choice, c)
+		# 	if !result:
+		# 		option.set_disabled(true)
+		print(choices)
+
+	# do character stuff
 	var color = Color.white
 	var name = ''
-	var parts = line.split(':')
+	var parts = new_line.split(':')
 	
 	if parts.size() > 1:
 		name = parts[0]
@@ -231,33 +302,45 @@ func next():
 			var subparts = name.split('.')
 			evaluate(name)
 			name = subparts[0]
-		else:
-			Diagraph.characters[name].idle()
 
 		if '/' in name:
-			print('multiple characters')
+			print('multiple characters not yet supported')
 
 		if name in Diagraph.characters:
 			current_character = null
-			line = strip_name(line)
-			var character = $Portrait.get_node_or_null(name)
+			new_line = strip_name(new_line)
+			var character = Portrait.get_node_or_null(name)
 			if !character:
-				$Portrait.add_child(Diagraph.characters[name])
-				character = $Portrait.get_node_or_null(name)
+				character = Diagraph.characters[name]
+
+				var old_parent = character.get_parent()
+				if old_parent:
+					old_parent.remove_child(character)
+				Portrait.add_child(character)
+			
+			current_character = character
 			if character.get('color'):
 				color = character.color
+		else:
+			name = ''
 
-	for child in $Portrait.get_children():
+	if skip:
+		current_line += 1
+		next_line()
+		return
+
+	for child in Portrait.get_children():
 		child.hide()
 		if child.name == name:
-			child.show()
-			current_character = child
+			if !popup:
+				child.show()
+			character_idle()
 
-	$Name/Outline.modulate = color
-	$TextBox/Outline.modulate = color
-	$Name.text = name
-	$Name.visible = name != ''
-	set_line(line)
+	NameOutline.modulate = color
+	TextBoxOutline.modulate = color
+	Name.text = name
+	Name.visible = (name != '') if !popup else false
+	set_line(new_line)
 
 	line_count += 1
 	current_line += 1
@@ -270,94 +353,98 @@ func option_selected(choice):
 		stop()
 		return
 		
-	current_node = next_node
-	current_line = 0
-	current_data = nodes[current_node].duplicate(true)
-	current_data.text = current_data.text.split('\n')
-	next()
+	set_node(next_node)
+	next_line()
 
 # ******************************************************************************
 
-var next_line := ''
+var line := ''
 var line_index := 0
 var line_active := false
 
-func set_line(line):
+func set_line(_line):
 	line_active = true
-	next_line = line
+	line = _line
 	line_index = 0
-	text_box.bbcode_text = ''
-	$DebugLog.text = ''
+	TextBox.bbcode_text = ''
+	DebugLog.text = ''
 	next_char_cooldown = original_cooldown
 	TextTimer.start(next_char_cooldown)
 
-func speed(value=original_cooldown):
-	next_char_cooldown = value
-
-func process_text(use_timer=true):
-	if line_index == next_line.length():
+func next_char(use_timer=true):
+	if line_index == line.length():
+		if popup:
+			line_active = false
+			DismissTimer.start(popup_timeout)
+			return
 		emit_signal('line_finished')
 		character_idle()
 		TextTimer.stop()
 		line_active = false
 		return 
 
-	var next_char = next_line[line_index]
+	var next_char = line[line_index]
 	var cooldown = next_char_cooldown
 
 	match next_char:
 		'{': # detect commands
-			if next_line[line_index + 1] == '{':
-				var end = next_line.findn('}}', line_index)
+			if line[line_index + 1] == '{':
+				var end = line.findn('}}', line_index)
 				if end != -1:
-					var command = next_line.substr(line_index, end - line_index + 2)
+					var command = line.substr(line_index, end - line_index + 2)
 					line_index = end + 2
+					if line_index < line.length():
+						if line[line_index] == ' ':
+							line_index += 1
 					var cmd = command.lstrip('{{').rstrip('}}')
 					var result = evaluate(cmd)
-					next_line.erase(line_index, end - line_index + 2)
-					next_line = next_line.insert(line_index, str(result))
-					$DebugLog.text += '\nexpansion: ' + str(result)
-					process_text()
+					line.erase(line_index, end - line_index + 2)
+					line = line.insert(line_index, str(result))
+					DebugLog.text += '\nexpansion: ' + str(result)
+					next_char()
 			else:
-				var end = next_line.findn('}', line_index)
+				var end = line.findn('}', line_index)
 				if end != -1:
-					var command = next_line.substr(line_index, end - line_index + 1)
+					var command = line.substr(line_index, end - line_index + 1)
 					line_index = end + 1
+					if line_index < line.length():
+						if line[line_index] == ' ':
+							line_index += 1
 					var cmd = command.lstrip('{').rstrip('}')
 					var result = evaluate(cmd)
-					$DebugLog.text += '\ncommand: ' + command
-					process_text()
+					DebugLog.text += '\ncommand: ' + command
+					next_char()
 		'<': # reserved for future use
-			var end = next_line.findn('>', line_index)
+			var end = line.findn('>', line_index)
 			if end != -1:
-				var block = next_line.substr(line_index, end - line_index + 1)
-				$DebugLog.text += '\nangle_brackets: ' + block
+				var block = line.substr(line_index, end - line_index + 1)
+				DebugLog.text += '\nangle_brackets: ' + block
 				line_index = end + 1
 		'[': # detect chunks of bbcode
-			var end = next_line.findn(']', line_index)
+			var end = line.findn(']', line_index)
 			if end != -1:
-				var block = next_line.substr(line_index, end - line_index + 1)
-				$DebugLog.text += '\nbbcode: ' + block
-				text_box.bbcode_text += block
+				var block = line.substr(line_index, end - line_index + 1)
+				DebugLog.text += '\nbbcode: ' + block
+				TextBox.bbcode_text += block
 				line_index = end + 1
-				process_text()
+				next_char()
 		'|': # pipe denotes chunks of text that should pop all at once
-			var end = next_line.findn('|', line_index + 1)
+			var end = line.findn('|', line_index + 1)
 			if end != -1:
-				var chunk = next_line.substr(line_index + 1 , end - line_index - 1)
-				$DebugLog.text += '\npop: ' + chunk
-				text_box.bbcode_text += chunk
+				var chunk = line.substr(line_index + 1 , end - line_index - 1)
+				DebugLog.text += '\npop: ' + chunk
+				TextBox.bbcode_text += chunk
 				line_index = end + 1
 		'_': # pause
 			cooldown = 0.25
-			$DebugLog.text += '\npause'
+			DebugLog.text += '\npause'
 			character_idle()
 			line_index += 1
 		'\\': # escape the next character
-			$DebugLog.text += '\nescape'
+			DebugLog.text += '\nescape'
 			line_index += 1
-			if line_index < next_line.length():
-				print_char(next_line[line_index])
+			if line_index < line.length():
+				print_char(line[line_index])
 				line_index += 1
 		_: # not a special character, just print it
 			print_char(next_char)
@@ -369,7 +456,7 @@ func process_text(use_timer=true):
 func print_char(c):
 	character_talk(c)
 	
-	text_box.bbcode_text += c
+	TextBox.bbcode_text += c
 	emit_signal('character_added', c)
 
 # ******************************************************************************
@@ -377,10 +464,14 @@ func print_char(c):
 func evaluate(input:String):
 	var ctx = Diagraph.sandbox.get_eval_context()
 
-	ctx.variable('_original_cooldown', original_cooldown)
+	ctx.variable('onready var caller = get_parent().caller')
+	ctx.variable('onready var scene = get_parent().caller.owner')
+
+	ctx.variable('var _original_cooldown = ' + str(original_cooldown))
 	ctx.method('func speed(value=_original_cooldown):', [
-		'_parent.next_char_cooldown = value',
+		'get_parent().next_char_cooldown = value',
 	])
 
 	var context = ctx.build(self)
+	add_child(context)
 	return Diagraph.sandbox.evaluate(input, context)

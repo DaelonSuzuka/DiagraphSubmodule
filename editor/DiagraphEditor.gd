@@ -19,7 +19,7 @@ onready var ToggleLeftPanel = find_node('ToggleLeftPanel')
 onready var LeftPanelSplit: HSplitContainer = find_node('LeftPanelSplit')
 onready var SettingsMenu:MenuButton = find_node('SettingsMenu')
 
-var is_plugin = false
+var plugin = null
 var current_conversation := ''
 var editor_data := {}
 
@@ -53,25 +53,33 @@ func _ready():
 	GraphEdit.connect('node_deleted', self, 'node_deleted')
 	GraphEdit.connect('node_selected', self, 'node_selected')
 
+	GraphEdit.connect('node_changed', self, 'node_changed')
+
 	SettingsMenu.add_check_item('Scroll While Zooming', [GraphEdit, 'set_zoom_scroll'])
 	var sub = SettingsMenu.create_submenu('Set Font Size', 'FontSize')
 	sub.hide_on_item_selection = false
 	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
 	SettingsMenu.add_submenu_item('Font Size +', 'FontSize', [self, 'set_font_size', 1])
 	SettingsMenu.add_submenu_item('Font Size -', 'FontSize', [self, 'set_font_size', -1])
-
-	if !Engine.editor_hint or is_plugin:
-		load_editor_data()
-		var zoom_hbox = GraphEdit.get_zoom_hbox()
-		var zoom_container = GraphToolbar.get_node('HBox/ZoomContainer')
-		zoom_hbox.get_parent().remove_child(zoom_hbox)
-		zoom_container.add_child(zoom_hbox)
+	
+	Diagraph.connect('refreshed', self, 'refresh')
 
 	$AutoSave.connect('timeout', self, 'autosave')
 
+func refresh():
+	load_editor_data()
+	var zoom_hbox = GraphEdit.get_zoom_hbox()
+	var zoom_container = GraphToolbar.get_node('HBox/ZoomContainer')
+	zoom_hbox.get_parent().remove_child(zoom_hbox)
+	zoom_container.add_child(zoom_hbox)
+
 func autosave():
-	save_conversation()
+	# save_conversation()
 	save_editor_data()
+
+func node_changed():
+	if plugin:
+		plugin.editor_button.text = 'Diagraph(*)'
 
 func toggle_left_panel():
 	LeftPanelSplit.collapsed = !LeftPanelSplit.collapsed
@@ -94,8 +102,7 @@ func save_conversation():
 	if !current_conversation:
 		return
 	var nodes = GraphEdit.get_nodes()
-	var path = Diagraph.name_to_path(current_conversation)
-	Diagraph.save_json(path, nodes)
+	Diagraph.save_conversation(current_conversation, nodes)
 
 func change_conversation(path):
 	save_conversation()
@@ -114,13 +121,13 @@ func load_conversation(path):
 	GraphEdit.clear()
 	current_conversation = name
 
-	if name in editor_data:
-		GraphEdit.set_data(editor_data[name])
-	else:
-		editor_data[name] = {}
-	var nodes = Diagraph.load_json(Diagraph.name_to_path(name), {})
+	var nodes = Diagraph.load_conversation(name, {})
 	if nodes:
 		GraphEdit.set_nodes(nodes)
+	if name in editor_data:
+		GraphEdit.call_deferred('set_data', editor_data[name])
+	else:
+		editor_data[name] = {}
 
 func create_conversation(path):
 	GraphEdit.clear()
@@ -134,7 +141,7 @@ func delete_conversation(path):
 	editor_data.erase(path)
 	save_editor_data()
 	var dir = Directory.new()
-	dir.remove(Diagraph.prefix + Diagraph.name_to_path(path))
+	dir.remove(Diagraph.prefix + Diagraph.conversations[path])
 	Diagraph.refresh()
 
 func rename_conversation(old, new):
@@ -145,8 +152,8 @@ func rename_conversation(old, new):
 	editor_data.erase(old)
 	save_editor_data()
 	var dir = Directory.new()
-	var old_path = Diagraph.prefix + Diagraph.name_to_path(old)
-	var new_path = Diagraph.prefix + Diagraph.name_to_path(new)
+	var old_path = Diagraph.prefix + Diagraph.conversations[old]
+	var new_path = Diagraph.prefix + Diagraph.conversations[new]
 	dir.rename(old_path, new_path)
 	load_conversation(new)
 	Diagraph.refresh()
@@ -169,15 +176,12 @@ func node_selected(node):
 	Tree.select_item(path)
 
 func node_deleted(id):
-	save_conversation()
 	Tree.delete_item(id)
 
 func node_renamed(old, new):
-	save_conversation()
 	Tree.refresh()
 
 func node_created(path):
-	save_conversation()
 	Tree.refresh()
 
 func select_card(path):
@@ -216,7 +220,7 @@ func stop():
 	$Preview.hide()
 
 func next():
-	DialogBox.next()
+	DialogBox.next_line()
 
 # ******************************************************************************
 

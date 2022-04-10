@@ -6,17 +6,18 @@ extends GraphEdit
 onready var ContextMenu = preload('res://addons/diagraph/utils/ContextMenu.gd')
 
 onready var node_types = {
-	'entry': load('res://addons/diagraph/nodes/EntryNode.tscn'),
+	# 'entry': load('res://addons/diagraph/nodes/EntryNode.tscn'),
 	'comment': load('res://addons/diagraph/nodes/CommentNode.tscn'),
-	'exit': load('res://addons/diagraph/nodes/ExitNode.tscn'),
-	'base': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
+	# 'exit': load('res://addons/diagraph/nodes/ExitNode.tscn'),
+	# 'base': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
 	'speech': load('res://addons/diagraph/nodes/SpeechNode.tscn'),
 	'branch': load('res://addons/diagraph/nodes/BranchNode.tscn'),
 	'jump': load('res://addons/diagraph/nodes/JumpNode.tscn'),
-	'subgraph': load('res://addons/diagraph/nodes/SubgraphNode.tscn'),
+	# 'subgraph': load('res://addons/diagraph/nodes/SubgraphNode.tscn'),
 }
 
-var nodes = {}
+var nodes := {}
+var notify_changes := true
 
 signal zoom_changed(zoom)
 
@@ -27,6 +28,7 @@ func set_zoom_scroll(state):
 signal node_created(node)
 signal node_deleted(id)
 signal node_renamed(old, new)
+signal node_changed()
 
 # ******************************************************************************
 
@@ -41,12 +43,18 @@ func _ready() -> void:
 	connect('paste_nodes_request', self, 'paste_nodes_request')
 	connect('popup_request', self, 'on_popup_request')
 
+	connect('_begin_node_move', self, 'contents_changed')
+
+func contents_changed():
+	if notify_changes:
+		emit_signal('node_changed')
+
 func _input(event: InputEvent) -> void:
 	if !is_visible_in_tree():
 		return
 	if !(event is InputEventMouseButton) or !event.pressed:
 		return
-	if !Rect2(rect_global_position, rect_size).has_point(event.global_position):
+	if !Rect2(rect_global_position, rect_size - Vector2(15, 15)).has_point(event.global_position):
 		return
 
 	# Scroll wheel up/down to zoom
@@ -116,7 +124,6 @@ func create_node(data=null) -> Node:
 	else:
 		node = node_types['speech'].instance()
 		node.set_id(get_id())
-	node.connect('close_request', self, 'delete_node', [node])
 	add_child(node)
 	if data:
 		if 'id' in data:
@@ -126,6 +133,10 @@ func create_node(data=null) -> Node:
 		node.set_data(data)
 	nodes[str(node.data.id)] = node
 	emit_signal('node_created', node)
+
+	node.connect('close_request', self, 'delete_node', [node])
+	node.connect('changed', self, 'contents_changed')
+
 	return node
 	
 func delete_node(node) -> void:
@@ -306,6 +317,7 @@ func do_zoom_scroll(step: int) -> void:
 # ******************************************************************************
 
 func set_nodes(data: Dictionary) -> void:
+	notify_changes = false
 	for id in data:
 		if data[id].type == 'comment':
 			create_node(data[id])
@@ -317,6 +329,7 @@ func set_nodes(data: Dictionary) -> void:
 		for to in node.data.connections:
 			var con = node.data.connections[to]
 			request_connection(node.name, con[0], to, con[1])
+	notify_changes = true
 
 func get_nodes() -> Dictionary:
 	var data := {}

@@ -93,7 +93,7 @@ __meta__ = {
 "_edit_use_anchors_": true
 }
 
-[node name="Outline" type="Panel" parent="Name"]
+[node name="NameOutline" type="Panel" parent="Name"]
 show_behind_parent = true
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -149,7 +149,7 @@ __meta__ = {
 "_edit_use_anchors_": true
 }
 
-[node name="Outline" type="Panel" parent="TextBox"]
+[node name="TextBoxOutline" type="Panel" parent="TextBox"]
 show_behind_parent = true
 anchor_right = 1.0
 anchor_bottom = 1.0

@@ -39,7 +39,9 @@ func refresh():
 		root.free()
 	root = create_item()
 
-	var current_conversation = owner.current_conversation
+	var current_conversation = ''
+	if owner:
+		current_conversation = owner.get('current_conversation')
 
 	for convo in Diagraph.conversations:
 		var item = create_item(root)
@@ -52,7 +54,7 @@ func refresh():
 
 		item.collapsed = convo != current_conversation
 
-		var nodes = Diagraph.load_json(Diagraph.name_to_path(path), {})
+		var nodes = Diagraph.load_conversation(path, {})
 		var node_names = []
 		var nodes_by_name = {}
 		

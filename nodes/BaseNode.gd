@@ -23,6 +23,8 @@ onready var Title = $Body/Toolbar/Title
 onready var Id = $Body/Toolbar/Id
 onready var Parent = get_parent()
 
+signal changed
+
 # ******************************************************************************
 
 func _ready() -> void:
@@ -33,6 +35,7 @@ func _ready() -> void:
 	Title.connect('text_changed', self, 'renamed')
 
 func resize_request(new_minsize: Vector2) -> void:
+	emit_signal('changed')
 	if get_parent().use_snap:
 		var snap = get_parent().get_snap()
 		rect_size = new_minsize.snapped(Vector2(snap, snap))
@@ -90,9 +93,9 @@ func title_bar_ctx(pos: Vector2) -> void:
 	accept_event()
 
 func _title_bar_ctx_selection(selection: String):
-	# 
 	if selection == 'Copy Path':
-		print('copying node path')
+		var path = '%s:%s' % [Parent.owner.current_conversation, data.name]
+		OS.clipboard = path
 
 	self.title_bar_ctx_selection(selection)
 
@@ -123,6 +126,7 @@ func rename(new_name):
 	renamed(new_name)
 
 func renamed(new_name):
+	emit_signal('changed')
 	Parent.emit_signal('node_renamed', data.name, new_name)
 	data.name = new_name
 

@@ -34,11 +34,18 @@ func _ready():
 
 	TextEdit.refresh_colors()
 	Diagraph.connect('refreshed', TextEdit, 'refresh_colors')
+	TextEdit.connect('text_changed', self, 'on_change')
+	for c in choices:
+		c.Choice.connect('text_changed', self, 'on_change')
+		c.Condition.connect('text_changed', self, 'on_change')
 
 	set_slot_color_right(1, slot_colors[0])
 	set_slot_color_right(2, slot_colors[1])
 	set_slot_color_right(3, slot_colors[2])
 	set_slot_color_right(4, slot_colors[3])
+
+func on_change(arg=null):
+	emit_signal('changed')
 
 func index_pressed(index):
 	match Edit.get_popup().get_item_text(index):
@@ -47,6 +54,7 @@ func index_pressed(index):
 			var state = Edit.get_popup().is_item_checked(0)
 			data['show_choices'] = state
 			set_choices_enabled(state)
+			emit_signal('changed')
 
 # ******************************************************************************
 

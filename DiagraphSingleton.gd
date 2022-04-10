@@ -10,24 +10,16 @@ var characters := {}
 var sandbox = load('res://addons/diagraph/Sandbox.gd').new()
 
 var conversation_path := 'conversations/'
-var conversations := []
+var conversations := {}
 
-var dialog_target = null
-var is_plugin = false
+var plugin = null
 
 signal refreshed
 
 # ******************************************************************************
 
-func start_dialog(conversation, options={}):
-	if dialog_target:
-		dialog_target.start(conversation, options)
-		dialog_target.connect('done', sandbox, 'clear_temp_locals', [], CONNECT_ONESHOT)
-
-# ******************************************************************************
-
 func _ready():
-	if !Engine.editor_hint or is_plugin:
+	if !Engine.editor_hint or plugin:
 		validate_paths()
 		call_deferred('refresh')
 
@@ -47,29 +39,66 @@ func refresh():
 
 func load_conversations():
 	conversations.clear()
-	var _conversations = get_files(prefix + conversation_path, '.json')
-	for convo in _conversations:
-		conversations.append(convo.substr(0, convo.length() - '.json'.length()))
+	var json_conversations = get_all_files(prefix + conversation_path, '.json')
+	for convo in json_conversations:
+		conversations[path_to_name(convo)] = convo
+	var yarn_conversations = get_all_files(prefix + conversation_path, '.yarn')
+	for convo in yarn_conversations:
+		conversations[path_to_name(convo)] = convo
 
+func load_conversation(name, default=null):
+	var result = default
+
+	# handle complete path
+	if name.begins_with('res://'):
+		if name.ends_with('.json'):
+			result = load_json(name, default)
+		if name.ends_with('.yarn'):
+			result = load_yarn(name, default)
+		return result
+
+	if !(name in conversations):
+		return result
+
+	# handle shorthand convo name
+	if conversations[name].ends_with('.json'):
+		result = load_json(conversations[name], default)
+	if conversations[name].ends_with('.yarn'):
+		result = load_yarn(conversations[name], default)
+	return result
+
+func save_conversation(name, data):
+	if conversations[name].ends_with('.json'):
+		save_json(conversations[name], data)
+	# if conversations[name].ends_with('.yarn'):
+	# 	load_yarn(conversations[name], default)
+	
 func load_characters():
 	characters.clear()
-	var dir := Directory.new()
-	for folder in get_files('res://' + characters_path):
-		for file in get_files('res://' + characters_path + folder, '.tscn'):
-			var file_name = 'res://' + characters_path + folder + '/' + file
-			if dir.file_exists(file_name):
-				var c = load(file_name).instance()
-				characters[c.name] = c
+	for file_name in get_all_files('res://' + characters_path, '.tscn'):
+		var c = load(file_name).instance()
+		characters[c.name] = c
 
-	var char_map = load_json(character_map_path, {})
-	for name in char_map:
-		if dir.file_exists(char_map[name]):
-			characters[name] = load(char_map[name]).instance()
+	# for folder in get_files('res://' + characters_path):
+	# 	for file in get_files('res://' + characters_path + folder, '.tscn'):
+	# 		var file_name = 'res://' + characters_path + folder + '/' + file
+	# 		if dir.file_exists(file_name):
+	# 			var c = load(file_name).instance()
+	# 			characters[c.name] = c
+
+	# var dir := Directory.new()
+	# var char_map = load_json(character_map_path, {})
+	# for name in char_map:
+	# 	if dir.file_exists(char_map[name]):
+	# 		characters[name] = load(char_map[name]).instance()
 
 # ******************************************************************************
 
 func name_to_path(name):
-	return conversation_path + name + '.json'
+	return conversation_path + name
+
+func path_to_name(path):
+	return path.trim_prefix(prefix + conversation_path).trim_suffix('.json').trim_suffix('.yarn')
 
 func validate_paths():
 	var dir = Directory.new()
@@ -94,6 +123,30 @@ func get_files(path, ext='') -> Array:
 					files.append(file)
 			else:
 				files.append(file)
+	dir.list_dir_end()
+	return files
+
+func get_all_files(path: String, ext:='', max_depth:=2, depth:=0, files:=[]) -> Array:
+	if depth >= max_depth:
+		return []
+	
+	var dir = Directory.new()
+	dir.open(path)
+	
+	dir.list_dir_begin(true, true)
+
+	var file = dir.get_next()
+	while file != "":
+		var file_path = dir.get_current_dir().plus_file(file)
+		if dir.current_is_dir():
+			get_all_files(file_path, ext, max_depth, depth + 1, files)
+		else:
+			if ext:
+				if file.ends_with(ext):
+					files.append(file_path)
+			else:
+				files.append(file_path)
+		file = dir.get_next()
 	dir.list_dir_end()
 	return files
 
@@ -122,3 +175,87 @@ func load_json(path, default=null):
 		if parse.result is Dictionary:
 			result = parse.result
 	return result
+
+# ******************************************************************************
+
+func load_yarn(path, default=null):
+	var result = default
+	
+	var f = File.new()
+	if f.file_exists(path):
+		f.open(path, File.READ)
+		var text = f.get_as_text()
+		f.close()
+		parse_yarn(text)
+		if nodes:
+			result = nodes
+	return result
+
+var nodes := {}
+
+func parse_yarn(text):
+	nodes.clear()
+	var mode := 'header'
+
+	var header := []
+	var body := []
+	var i := 0
+	var lines = text.split('\n')
+	while i < lines.size():
+		var line = lines[i]
+		if line == '===': # end of node
+			create_node(header, body)
+			header.clear()
+			body.clear()
+			mode = 'header'
+		elif line == '---': # end of header
+			mode = 'body'
+		else:
+			if mode == 'header':
+				header.append(line)
+			if mode == 'body':
+				body.append(line)
+		i += 1
+
+var used_ids = []
+
+func get_id() -> int:
+	var id = randi()
+	if id in used_ids:
+		id = get_id()
+	used_ids.append(id)
+	return id
+
+func create_node(header, body):
+	var node := {
+		id = 0,
+		type = '',
+		name = '',
+		text = '',
+		next = 'none',
+	}
+	
+	var fields := {}
+	for line in header:
+		var parts = line.split(':')
+		if parts.size() != 2:
+			continue
+		fields[parts[0]] = parts[1].lstrip(' ')
+
+	node.name = fields.title
+	node.id = fields.get('id', get_id())
+	node.type = fields.get('type', 'speech')
+	if 'offset' in fields:
+		node['offset'] = fields.offset
+
+	if node.type == 'speech':
+		node['show_choices'] = bool(fields.get('show_choices', false))
+
+	var _body = body[0]
+	var i = 1
+	while i < body.size():
+		_body += '\n' + body[i]
+		i += 1
+	node['text'] = _body
+
+	nodes[str(node.id)] = node

@@ -30,14 +30,13 @@ func add_temp_locals(dict):
 
 func get_locals():
 	var _locals = locals.duplicate(true)
-	if Diagraph.dialog_target and Diagraph.dialog_target.get('caller'):
-		_locals['caller'] = Diagraph.dialog_target.caller
-		if Diagraph.dialog_target.caller.owner:
-			_locals['scene'] = Diagraph.dialog_target.caller.owner
+
 	for name in temp_locals:
 		_locals[name] = temp_locals[name]
+
 	for c in Diagraph.characters:
 		_locals[c] = Diagraph.characters[c]
+
 	return _locals
 
 # ******************************************************************************
@@ -46,26 +45,14 @@ func get_locals():
 class EvalContext extends Node:
 	var script_template = """
 extends Node
-var _parent = null
-"""
-
-	var init_template = """
-func init(parent):
-	name = 'EvalContext'
-	_parent = parent
 """
 
 	var methods := []
-	var init_code := []
 	var variables := []
 
 	func reset_script():
 		methods.clear()
-		init_code.clear()
 		variables.clear()
-
-	func init(code=''):
-		init_code.append(code)
 
 	func method(signature='', body=[]):
 		var code = signature
@@ -73,22 +60,14 @@ func init(parent):
 			code += '\n\t' + line
 		methods.append(code)
 
-	func variable(name, value=null):
-		var code = 'var ' + name
-		if value:
-			code += ' = ' + str(value)
+	func variable(code):
 		variables.append(code)
 
 	func build(parent):
 		var source = script_template
-		var init_source = init_template
 
 		for v in variables:
 			source += '\n' + v
-
-		for line in init_code:
-			init_source += '\n\t' + line
-		source += '\n' + init_source
 		
 		for m in methods:
 			source += '\n' + m
@@ -99,7 +78,7 @@ func init(parent):
 
 		var node = Node.new()
 		node.script = script
-		node.init(parent)
+		node.name = 'EvalContext'
 		return node
 
 func get_eval_context():
@@ -107,13 +86,13 @@ func get_eval_context():
 	return context
 
 func evaluate(input:String, context_object=null):
-	var locals = get_locals()
+	var _locals = get_locals()
 	var expression = Expression.new()
 	var result = null
 	
-	var error = expression.parse(input, PoolStringArray(locals.keys()))
+	var error = expression.parse(input, PoolStringArray(_locals.keys()))
 	if error == OK:
-		result = expression.execute(locals.values(), context_object)
+		result = expression.execute(_locals.values(), context_object)
 		if expression.has_execute_failed():
 			return input
 	else:
