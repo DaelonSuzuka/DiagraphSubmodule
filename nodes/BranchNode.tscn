@@ -109,13 +109,14 @@ margin_bottom = 84.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch1" index="0"]
-margin_right = 198.0
+margin_right = 209.0
 margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch1" index="1"]
-margin_left = 202.0
-margin_right = 228.0
+visible = false
+margin_left = 183.0
+margin_right = 209.0
 margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
@@ -127,6 +128,12 @@ text = "1"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
+[node name="Label" type="Label" parent="Branch1" index="2"]
+margin_left = 213.0
+margin_right = 228.0
+margin_bottom = 25.0
+text = "1"
+
 [node name="Branch2" type="HBoxContainer" parent="." index="2"]
 margin_left = 11.0
 margin_top = 88.0
@@ -135,13 +142,14 @@ margin_bottom = 113.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch2" index="0"]
-margin_right = 198.0
+margin_right = 209.0
 margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch2" index="1"]
-margin_left = 202.0
-margin_right = 228.0
+visible = false
+margin_left = 183.0
+margin_right = 209.0
 margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
@@ -153,6 +161,12 @@ text = "2"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
+[node name="Label" type="Label" parent="Branch2" index="2"]
+margin_left = 213.0
+margin_right = 228.0
+margin_bottom = 25.0
+text = "2"
+
 [node name="Branch3" type="HBoxContainer" parent="." index="3"]
 margin_left = 11.0
 margin_top = 117.0
@@ -161,13 +175,14 @@ margin_bottom = 142.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch3" index="0"]
-margin_right = 198.0
+margin_right = 209.0
 margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch3" index="1"]
-margin_left = 202.0
-margin_right = 228.0
+visible = false
+margin_left = 183.0
+margin_right = 209.0
 margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
@@ -179,6 +194,12 @@ text = "3"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
 
+[node name="Label" type="Label" parent="Branch3" index="2"]
+margin_left = 213.0
+margin_right = 228.0
+margin_bottom = 25.0
+text = "3"
+
 [node name="Branch4" type="HBoxContainer" parent="." index="4"]
 margin_left = 11.0
 margin_top = 146.0
@@ -187,13 +208,14 @@ margin_bottom = 171.0
 script = ExtResource( 4 )
 
 [node name="Condition" type="LineEdit" parent="Branch4" index="0"]
-margin_right = 198.0
+margin_right = 209.0
 margin_bottom = 25.0
 size_flags_horizontal = 3
 
 [node name="Menu" type="MenuButton" parent="Branch4" index="1"]
-margin_left = 202.0
-margin_right = 228.0
+visible = false
+margin_left = 183.0
+margin_right = 209.0
 margin_bottom = 25.0
 focus_mode = 2
 custom_styles/hover = SubResource( 1 )
@@ -204,6 +226,12 @@ custom_styles/normal = SubResource( 5 )
 text = "4"
 icon = SubResource( 7 )
 items = [ "Add Choice", null, 0, false, false, 0, 0, null, "", false, "test2", null, 0, false, false, 1, 0, null, "", false ]
+
+[node name="Label" type="Label" parent="Branch4" index="2"]
+margin_left = 213.0
+margin_right = 228.0
+margin_bottom = 25.0
+text = "4"
 
 [node name="Control" type="Control" parent="." index="5"]
 margin_left = 11.0
