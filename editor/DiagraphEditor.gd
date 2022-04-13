@@ -6,6 +6,7 @@ extends Control
 onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
 onready var Run = find_node('Run')
+onready var Save = find_node('Save')
 onready var Stop = find_node('Stop')
 onready var Next = find_node('Next')
 onready var Debug = find_node('Debug')
@@ -27,6 +28,7 @@ var editor_data := {}
 
 func _ready():
 	Run.connect('pressed', self, 'run')
+	Save.connect('pressed', self, 'save')
 	Stop.connect('pressed', self, 'stop')
 	Next.connect('pressed', self, 'next')
 	Debug.connect('toggled', $Preview/DialogBox/DebugLog, 'set_visible')
@@ -72,6 +74,9 @@ func refresh():
 	var zoom_container = GraphToolbar.get_node('HBox/ZoomContainer')
 	zoom_hbox.get_parent().remove_child(zoom_hbox)
 	zoom_container.add_child(zoom_hbox)
+
+func save():
+	save_conversation()
 
 func autosave():
 	# save_conversation()
