@@ -197,8 +197,19 @@ func stop():
 
 # ******************************************************************************
 
+func get_id() -> int:
+	var id = randi()
+	if str(id) in nodes:
+		id = get_id()
+	return id
+
 func set_node(next_node):
-	current_node = next_node
+	if next_node in nodes:
+		current_node = next_node
+	else:
+		for node in nodes:
+			if next_node == nodes[node].name:
+				current_node = str(nodes[node].id)
 	current_line = 0
 	current_data = nodes[current_node].duplicate(true)
 	current_data.text = split_text(current_data.text)
@@ -230,18 +241,7 @@ func next_line():
 			stop()
 			return
 		if current_data.next == 'choice':
-			waiting_for_choice = true
-			for c in current_data.choices:
-				if current_data.choices[c].choice:
-					var result = true
-					var condition = current_data.choices[c].condition
-					if condition:
-						result = evaluate(condition)
-					var option = add_option(current_data.choices[c].choice, c)
-					if !result:
-						option.set_disabled(true)
-			if Options.get_child_count():
-				Options.get_child(0).grab_focus()
+			display_choices()
 			return
 
 		set_node(current_data.next)
@@ -252,44 +252,49 @@ func next_line():
 	# TODO: check for lines that only contain a code block
 	# TODO: skip lines that are only whitespace
 	var skip := false
-	if new_line.length() == 0 or new_line.begins_with('#'):
+	if new_line.length() == 0 or new_line.begins_with('#') or new_line.begins_with('//'):
 		skip = true
 
 	if new_line.begins_with('-'):
+		var c_num = 0
 		var choices = {}
-		var lookahead = current_line
-
-		while lookahead < current_data.text.size():
-			var lookahead_line = current_data.text[lookahead]
-			var choice_number = 1
-			lookahead += 1
-			print(lookahead_line)
-			if lookahead_line.begins_with('\t'):
-				continue
-			if lookahead_line.begins_with('-'):
-				var parts = lookahead_line.lstrip('- ').split('=>')
-				var choice = {
-					choice = parts[0],
-					condition = '',
-					next = '',
-				}
-				if current_data.text[lookahead + 1].begins_with('\t'):
-					choice.next = lookahead + 1
+		for i in range(current_line, current_data.text.size()):
+			var line = current_data.text[i]
+			if line.begins_with('-'):
+				c_num += 1
+				
+				var parts = line.lstrip(' -').split('=>')
+				var choice = parts[0]
+				var next = ''
 				if parts.size() == 2:
-					choice.next = parts[1]
-				choices[str(choice_number)] = choice
-				choice_number += 1
+					next = parts[1].lstrip(' ')
+				choices[str(c_num)] = {
+					choice = choice,
+					condition = '',
+					next = next,
+					body = [],
+				}
+			if line.begins_with('\t'):
+				choices[str(c_num)].body.append(line.trim_prefix('\t'))\
 
-		# waiting_for_choice = true
-		# for choice in choices:
-		# 	var result = true
-		# 	var condition = choice.condition
-		# 	if condition:
-		# 		result = evaluate(condition)
-		# 	var option = add_option(choice.choice, c)
-		# 	if !result:
-		# 		option.set_disabled(true)
-		print(choices)
+		for c in choices:
+			if choices[c].body:
+				var node = {
+					name = '',
+					text = '',
+					next = 'none',
+					type = 'speech',
+					id = get_id(),
+				}
+				node.name = str(node.id)
+				choices[c].next = str(node.id)
+				for line in choices[c].body:
+					node.text += line + '\n'
+				nodes[str(node.id)] = node
+
+		current_data.choices = choices
+		display_choices()
+		return
 
 	# do character stuff
 	var color = Color.white
@@ -344,6 +349,20 @@ func next_line():
 
 	line_count += 1
 	current_line += 1
+
+func display_choices():
+	waiting_for_choice = true
+	for c in current_data.choices:
+		if current_data.choices[c].choice:
+			var result = true
+			var condition = current_data.choices[c].condition
+			if condition:
+				result = evaluate(condition)
+			var option = add_option(current_data.choices[c].choice, c)
+			if !result:
+				option.set_disabled(true)
+	if Options.get_child_count():
+		Options.get_child(0).grab_focus()
 
 func option_selected(choice):
 	remove_options()
