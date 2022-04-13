@@ -81,7 +81,9 @@ func set_data(new_data):
 		TextEdit.text = new_data.text
 	if 'show_choices' in new_data:
 		var state = new_data['show_choices']
-		data['show_choices'] = new_data['show_choices']
+		if state is String:
+			state = {'True': true, 'False': false}[state]
+		data['show_choices'] = state
 		set_choices_enabled(state)
 		Edit.get_popup().set_item_checked(0, state)
 	if 'choices' in new_data:

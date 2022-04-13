@@ -12,6 +12,7 @@ var data := {
 	text = '',
 	next = 'none',
 	rect_size = '',
+	position = '',
 	offset = '',
 	connections = {}
 }
@@ -133,10 +134,12 @@ func renamed(new_name):
 # ******************************************************************************
 
 func get_data() -> Dictionary:
-	data.offset = var2str(offset)
-	data.rect_size = var2str(rect_size)
-	data.name = Title.text
-	return data.duplicate(true)
+	var _data = data.duplicate(true)
+	# _data.offset = var2str(offset)
+	# _data.rect_size = var2str(rect_size)
+	_data.position = var2str(Rect2(offset, rect_size))
+	_data.name = Title.text
+	return _data
 
 func set_data(new_data: Dictionary) -> GraphNode:
 	if 'type' in new_data:
@@ -151,8 +154,13 @@ func set_data(new_data: Dictionary) -> GraphNode:
 	if 'name' in new_data:
 		data.name = new_data.name
 		rename(new_data.name)
-	if 'offset' in new_data:
-		offset = str2var(new_data.offset)
-	if 'rect_size' in new_data:
-		rect_size = str2var(new_data.rect_size)
+	if 'position' in new_data:
+		var rect = str2var(new_data.position)
+		offset = rect.position
+		rect_size = rect.size
+	else:
+		if 'offset' in new_data:
+			offset = str2var(new_data.offset)
+		if 'rect_size' in new_data:
+			rect_size = str2var(new_data.rect_size)
 	return self
