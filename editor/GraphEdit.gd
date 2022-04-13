@@ -319,11 +319,7 @@ func do_zoom_scroll(step: int) -> void:
 func set_nodes(data: Dictionary) -> void:
 	notify_changes = false
 	for id in data:
-		if data[id].type == 'comment':
-			create_node(data[id])
-	for id in data:
-		if data[id].type != 'comment':
-			create_node(data[id])
+		create_node(data[id])
 	for node in nodes.values():
 		node.update()
 		for to in node.data.connections:
