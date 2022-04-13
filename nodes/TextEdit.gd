@@ -65,6 +65,7 @@ func refresh_colors():
 	clear_colors()
 
 	add_color_region('#', '', Color.forestgreen, true)
+	add_color_region('//', '', Color.forestgreen, true)
 
 	for name in Diagraph.characters:
 		if Diagraph.characters[name].get('color'):
