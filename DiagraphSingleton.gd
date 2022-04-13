@@ -70,8 +70,8 @@ func load_conversation(name, default=null):
 func save_conversation(name, data):
 	if conversations[name].ends_with('.json'):
 		save_json(conversations[name], data)
-	# if conversations[name].ends_with('.yarn'):
-	# 	load_yarn(conversations[name], default)
+	if conversations[name].ends_with('.yarn'):
+		save_yarn(conversations[name], data)
 	
 func load_characters():
 	characters.clear()
@@ -178,6 +178,51 @@ func load_json(path, default=null):
 
 # ******************************************************************************
 
+func save_yarn(path, data):
+	if !path.begins_with('res://') and !path.begins_with('user://'):
+		path = prefix + path
+
+	var out = convert_nodes_to_yarn(data)
+
+	var f = File.new()
+	f.open(path, File.WRITE)
+	f.store_string(out)
+	f.close()
+
+func convert_nodes_to_yarn(data):
+	var out = ''
+
+	for id in data:
+		var node = data[id]
+
+		node['title'] = node['name']
+		node.erase('name')
+
+		var text = node['text']
+		node.erase('text')
+
+		node.erase('rect_size')
+		node.erase('offset')
+
+		if 'connections' in node:
+			node.connections = var2str(node.connections).replace('\n', '')
+		if 'choices' in node:
+			node.choices = var2str(node.choices).replace('\n', '')
+		if 'branches' in node:
+			node.branches = var2str(node.branches).replace('\n', '')
+
+		for field in node:
+			out += field + ': ' + str(node[field]) + '\n'
+
+		out += '---' + '\n'
+
+		out += text + '\n'
+		out += '===' + '\n'
+
+	return out
+
+# ------------------------------------------------------------------------------
+
 func load_yarn(path, default=null):
 	var result = default
 	
@@ -237,19 +282,29 @@ func create_node(header, body):
 	
 	var fields := {}
 	for line in header:
-		var parts = line.split(':')
+		var parts = line.split(':', true, 1)
 		if parts.size() != 2:
 			continue
 		fields[parts[0]] = parts[1].lstrip(' ')
 
 	node.name = fields.title
-	node.id = fields.get('id', get_id())
-	node.type = fields.get('type', 'speech')
-	if 'offset' in fields:
-		node['offset'] = fields.offset
+	fields.erase('title')
 
-	if node.type == 'speech':
-		node['show_choices'] = bool(fields.get('show_choices', false))
+	node.id = fields.get('id', get_id())
+	fields.erase('id')
+
+	node.type = fields.get('type', 'speech')
+	fields.erase('type')
+
+	for field in fields:
+		node[field] = fields[field]
+
+	if 'connections' in node:
+		node.connections = str2var(node.connections)
+	if 'choices' in node:
+		node.choices = str2var(node.choices)
+	if 'branches' in node:
+		node.branches = str2var(node.branches)
 
 	var _body = body[0]
 	var i = 1
