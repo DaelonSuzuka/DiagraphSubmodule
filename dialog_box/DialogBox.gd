@@ -380,7 +380,10 @@ func option_selected(choice):
 		stop()
 		return
 		
-	set_node(next_node)
+	jump_to(next_node)
+
+func jump_to(node):
+	set_node(node)
 	next_line()
 
 # ******************************************************************************
@@ -397,6 +400,26 @@ func set_line(_line):
 	DebugLog.text = ''
 	next_char_cooldown = original_cooldown
 	TextTimer.start(next_char_cooldown)
+
+func skip_space():
+	if line_index < line.length():
+		if line[line_index] == ' ':
+			line_index += 1
+
+
+func get_block(start_string, end_string, options=[]):
+	var result = null
+	var end = line.findn(end_string, line_index)
+	if end != -1:
+		result = line.substr(line_index, end - line_index + len(end_string))
+		line_index = end + len(end_string)
+		skip_space()
+		if !('nostrip' in options):
+			result = result.lstrip(start_string).rstrip(end_string)
+		if 'erase' in options:
+			line.erase(line_index, end - line_index + len(end_string))
+
+	return result
 
 func next_char(use_timer=true):
 	if line_index == line.length():
@@ -416,44 +439,33 @@ func next_char(use_timer=true):
 	match next_char:
 		'{': # detect commands
 			if line[line_index + 1] == '{':
-				var end = line.findn('}}', line_index)
-				if end != -1:
-					var command = line.substr(line_index, end - line_index + 2)
-					line_index = end + 2
-					if line_index < line.length():
-						if line[line_index] == ' ':
-							line_index += 1
-					var cmd = command.lstrip('{{').rstrip('}}')
+				var cmd = get_block('{{', '}}', ['erase'])
+				if cmd:
 					var result = evaluate(cmd)
-					line.erase(line_index, end - line_index + 2)
 					line = line.insert(line_index, str(result))
-					DebugLog.text += '\nexpansion: ' + str(result)
 					next_char()
 			else:
-				var end = line.findn('}', line_index)
-				if end != -1:
-					var command = line.substr(line_index, end - line_index + 1)
-					line_index = end + 1
-					if line_index < line.length():
-						if line[line_index] == ' ':
-							line_index += 1
-					var cmd = command.lstrip('{').rstrip('}')
+				var cmd = get_block('{', '}')
+				if cmd:
 					var result = evaluate(cmd)
-					DebugLog.text += '\ncommand: ' + command
 					next_char()
-		'<': # reserved for future use
-			var end = line.findn('>', line_index)
-			if end != -1:
-				var block = line.substr(line_index, end - line_index + 1)
-				DebugLog.text += '\nangle_brackets: ' + block
-				line_index = end + 1
+		'<': 
+			if line[line_index + 1] == '<':
+				var cmd = get_block('<<', '>>')
+				if cmd:
+					print(cmd)
+					# if cmd.begins_with('jump '):
+					# 	jump_to(cmd.trim_prefix('jump '))
+					# 	return
+			else:
+				var block = get_block('<', '>', ['nostrip'])
+				if block:
+					print(block)
 		'[': # detect chunks of bbcode
-			var end = line.findn(']', line_index)
-			if end != -1:
-				var block = line.substr(line_index, end - line_index + 1)
+			var block = get_block('[', ']', ['nostrip'])
+			if block:
 				DebugLog.text += '\nbbcode: ' + block
 				TextBox.bbcode_text += block
-				line_index = end + 1
 				next_char()
 		'|': # pipe denotes chunks of text that should pop all at once
 			var end = line.findn('|', line_index + 1)
@@ -488,15 +500,24 @@ func print_char(c):
 
 # ******************************************************************************
 
+func process_yarn(command):
+	if command.begins_with('jump '):
+		jump_to(command.trim_prefix('jump '))
+
+# ******************************************************************************
+
 func evaluate(input:String):
 	var ctx = Diagraph.sandbox.get_eval_context()
 
 	ctx.variable('onready var caller = get_parent().caller')
-	ctx.variable('onready var scene = get_parent().caller.owner')
+	# ctx.variable('onready var scene = get_parent().caller.owner')
 
 	ctx.variable('var _original_cooldown = ' + str(original_cooldown))
 	ctx.method('func speed(value=_original_cooldown):', [
 		'get_parent().next_char_cooldown = value',
+	])
+	ctx.method('func jump(node):', [
+		'get_parent().jump_to(node)',
 	])
 
 	var context = ctx.build(self)
