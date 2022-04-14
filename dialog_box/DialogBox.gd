@@ -255,15 +255,21 @@ func next_line():
 	if new_line.length() == 0 or new_line.begins_with('#') or new_line.begins_with('//'):
 		skip = true
 
-	if new_line.begins_with('-'):
+	var marker = null
+	if new_line.begins_with('->'):
+		marker = '->'
+	elif new_line.begins_with('-'):
+		marker = '-'
+
+	if marker:
 		var c_num = 0
 		var choices = {}
 		for i in range(current_line, current_data.text.size()):
 			var line = current_data.text[i]
-			if line.begins_with('-'):
+			if line.begins_with(marker):
 				c_num += 1
 				
-				var parts = line.lstrip(' -').split('=>')
+				var parts = line.lstrip(' ' + marker).split('=>')
 				var choice = parts[0]
 				var next = ''
 				if parts.size() == 2:
@@ -274,8 +280,10 @@ func next_line():
 					next = next,
 					body = [],
 				}
+			if line.begins_with('    '):
+				choices[str(c_num)].body.append(line.trim_prefix('    '))
 			if line.begins_with('\t'):
-				choices[str(c_num)].body.append(line.trim_prefix('\t'))\
+				choices[str(c_num)].body.append(line.trim_prefix('\t'))
 
 		for c in choices:
 			if choices[c].body:
