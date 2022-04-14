@@ -153,7 +153,7 @@ func delete_item(id):
 			while true:
 				if card == null:
 					break
-				if card.get_metadata(0) == id:
+				if str(card.get_metadata(0)) == str(id):
 					item.remove_child(card)
 					card.free()
 					break
