@@ -12,25 +12,23 @@ var sandbox = load('res://addons/diagraph/Sandbox.gd').new()
 var conversation_path := 'conversations/'
 var conversations := {}
 
-var plugin = null
-
 signal refreshed
 
 # ******************************************************************************
 
 func _ready():
-	if !Engine.editor_hint or plugin:
-		validate_paths()
-		call_deferred('refresh')
+	validate_paths()
+	call_deferred('refresh')
 
-		if OS.has_feature('HTML5'):
-			var files = get_files('res://' + conversation_path, '.json')
-			for file in files:
-				var from_path = 'res://' + conversation_path + file
-				var to_path = 'user://' + conversation_path + file
-				var convo = load_json(from_path)
-				if convo:
-					save_json(to_path, convo)
+	# if !Engine.editor_hint or plugin:
+	# 	if OS.has_feature('HTML5'):
+	# 		var files = get_files('res://' + conversation_path, '.json')
+	# 		for file in files:
+	# 			var from_path = 'res://' + conversation_path + file
+	# 			var to_path = 'user://' + conversation_path + file
+	# 			var convo = load_json(from_path)
+	# 			if convo:
+	# 				save_json(to_path, convo)
 
 func refresh():
 	load_conversations()
@@ -68,10 +66,21 @@ func load_conversation(name, default=null):
 	return result
 
 func save_conversation(name, data):
-	if conversations[name].ends_with('.json'):
-		save_json(conversations[name], data)
-	if conversations[name].ends_with('.yarn'):
-		save_yarn(conversations[name], data)
+	if name.begins_with('res://'):
+		if name.ends_with('.json'):
+			save_json(name, data)
+		if name.ends_with('.yarn'):
+			save_yarn(name, data)
+		return
+	if name in conversations:
+		if conversations[name].ends_with('.json'):
+			save_json(conversations[name], data)
+			# var path = conversations[name].replace('.json', '.yarn')
+			# save_yarn(path, data)
+		if conversations[name].ends_with('.yarn'):
+			save_yarn(conversations[name], data)
+	else:
+		save_yarn(prefix + conversation_path + name + '.yarn', data)
 	
 func load_characters():
 	characters.clear()
