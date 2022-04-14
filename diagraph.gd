@@ -14,10 +14,15 @@ var editor_button
 
 # ******************************************************************************
 
+func enable_plugin():
+	add_autoload_singleton('Diagraph', singleton_path)
+
+func disable_plugin():
+	remove_autoload_singleton('Diagraph')
+
 func _enter_tree():
 	name = 'Diagraph'
-	add_autoload_singleton('Diagraph', singleton_path)
-	Diagraph.plugin = self
+	# Diagraph.plugin = self
 
 	inspector_instance = load(inspector_class).new()
 	inspector_instance.plugin = self
