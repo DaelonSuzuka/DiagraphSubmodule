@@ -7,6 +7,9 @@
 slot/0/left_enabled = true
 script = ExtResource( 2 )
 
+[node name="Title" parent="Body/Toolbar" index="1"]
+text = "Jump"
+
 [node name="HBoxContainer" type="HBoxContainer" parent="Body" index="1"]
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -16,14 +19,14 @@ __meta__ = {
 }
 
 [node name="Label" type="Label" parent="Body/HBoxContainer" index="0"]
-margin_right = 75.0
-margin_bottom = 31.0
+margin_right = 57.0
+margin_bottom = 25.0
 size_flags_vertical = 0
 text = "Jump To:"
 
 [node name="LineEdit" type="LineEdit" parent="Body/HBoxContainer" index="1"]
-margin_left = 79.0
+margin_left = 61.0
 margin_right = 178.0
-margin_bottom = 31.0
+margin_bottom = 25.0
 size_flags_horizontal = 3
 size_flags_vertical = 0
