@@ -202,6 +202,7 @@ margin_right = 137.0
 margin_bottom = 30.0
 focus_mode = 2
 text = "Tools"
+script = ExtResource( 7 )
 
 [node name="Run" type="Button" parent="LeftPanelSplit/GraphContainer/GraphToolbar/HBox"]
 margin_left = 141.0
