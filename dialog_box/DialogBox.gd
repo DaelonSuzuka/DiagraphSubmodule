@@ -389,40 +389,40 @@ func jump_to(node):
 # ******************************************************************************
 
 var line := ''
-var line_index := 0
+var cursor := 0
 var line_active := false
 
 func set_line(_line):
 	line_active = true
 	line = _line
-	line_index = 0
+	cursor = 0
 	TextBox.bbcode_text = ''
 	DebugLog.text = ''
 	next_char_cooldown = original_cooldown
 	TextTimer.start(next_char_cooldown)
 
 func skip_space():
-	if line_index < line.length():
-		if line[line_index] == ' ':
-			line_index += 1
+	if cursor < line.length():
+		if line[cursor] == ' ':
+			cursor += 1
 
 
 func get_block(start_string, end_string, options=[]):
 	var result = null
-	var end = line.findn(end_string, line_index)
+	var end = line.findn(end_string, cursor)
 	if end != -1:
-		result = line.substr(line_index, end - line_index + len(end_string))
-		line_index = end + len(end_string)
+		result = line.substr(cursor, end - cursor + len(end_string))
+		cursor = end + len(end_string)
 		skip_space()
 		if !('nostrip' in options):
 			result = result.lstrip(start_string).rstrip(end_string)
 		if 'erase' in options:
-			line.erase(line_index, end - line_index + len(end_string))
+			line.erase(cursor, end - cursor + len(end_string))
 
 	return result
 
 func next_char(use_timer=true):
-	if line_index == line.length():
+	if cursor >= line.length():
 		if popup:
 			line_active = false
 			DismissTimer.start(popup_timeout)
@@ -433,16 +433,17 @@ func next_char(use_timer=true):
 		line_active = false
 		return 
 
-	var next_char = line[line_index]
+	var this_char = line[cursor]
+	var next_char = line[cursor + 1]
 	var cooldown = next_char_cooldown
 
-	match next_char:
+	match this_char:
 		'{': # detect commands
-			if line[line_index + 1] == '{':
+			if next_char == '{':
 				var cmd = get_block('{{', '}}', ['erase'])
 				if cmd:
 					var result = evaluate(cmd)
-					line = line.insert(line_index, str(result))
+					line = line.insert(cursor, str(result))
 					next_char()
 			else:
 				var cmd = get_block('{', '}')
@@ -450,13 +451,14 @@ func next_char(use_timer=true):
 					var result = evaluate(cmd)
 					next_char()
 		'<': 
-			if line[line_index + 1] == '<':
+			if next_char == '<':
 				var cmd = get_block('<<', '>>')
 				if cmd:
-					print(cmd)
-					# if cmd.begins_with('jump '):
-					# 	jump_to(cmd.trim_prefix('jump '))
-					# 	return
+					if cmd.begins_with('jump '):
+						jump_to(cmd.trim_prefix('jump '))
+						cursor = line.length()
+						next_char()
+						return
 			else:
 				var block = get_block('<', '>', ['nostrip'])
 				if block:
@@ -464,30 +466,26 @@ func next_char(use_timer=true):
 		'[': # detect chunks of bbcode
 			var block = get_block('[', ']', ['nostrip'])
 			if block:
-				DebugLog.text += '\nbbcode: ' + block
 				TextBox.bbcode_text += block
 				next_char()
 		'|': # pipe denotes chunks of text that should pop all at once
-			var end = line.findn('|', line_index + 1)
+			var end = line.findn('|', cursor + 1)
 			if end != -1:
-				var chunk = line.substr(line_index + 1 , end - line_index - 1)
-				DebugLog.text += '\npop: ' + chunk
+				var chunk = line.substr(cursor + 1 , end - cursor - 1)
 				TextBox.bbcode_text += chunk
-				line_index = end + 1
+				cursor = end + 1
 		'_': # pause
 			cooldown = 0.25
-			DebugLog.text += '\npause'
 			character_idle()
-			line_index += 1
+			cursor += 1
 		'\\': # escape the next character
-			DebugLog.text += '\nescape'
-			line_index += 1
-			if line_index < line.length():
-				print_char(line[line_index])
-				line_index += 1
+			cursor += 1
+			if cursor < line.length():
+				print_char(line[cursor])
+				cursor += 1
 		_: # not a special character, just print it
-			print_char(next_char)
-			line_index += 1
+			print_char(this_char)
+			cursor += 1
 
 	if use_timer:
 		TextTimer.start(cooldown)
