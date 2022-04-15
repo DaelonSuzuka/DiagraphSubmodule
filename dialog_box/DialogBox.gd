@@ -265,11 +265,11 @@ func next_line():
 		var c_num = 0
 		var choices = {}
 		for i in range(current_line, current_data.text.size()):
-			var line = current_data.text[i]
-			if line.begins_with(marker):
+			var _line = current_data.text[i]
+			if _line.begins_with(marker):
 				c_num += 1
 				
-				var parts = line.lstrip(' ' + marker).split('=>')
+				var parts = _line.lstrip(' ' + marker).split('=>')
 				var choice = parts[0]
 				var next = ''
 				if parts.size() == 2:
@@ -280,10 +280,10 @@ func next_line():
 					next = next,
 					body = [],
 				}
-			if line.begins_with('    '):
-				choices[str(c_num)].body.append(line.trim_prefix('    '))
-			if line.begins_with('\t'):
-				choices[str(c_num)].body.append(line.trim_prefix('\t'))
+			if _line.begins_with('    '):
+				choices[str(c_num)].body.append(_line.trim_prefix('    '))
+			if _line.begins_with('\t'):
+				choices[str(c_num)].body.append(_line.trim_prefix('\t'))
 
 		for c in choices:
 			if choices[c].body:
