@@ -28,11 +28,17 @@ signal card_deleted(id)
 
 func _ready():
 	Diagraph.connect('refreshed', self, 'refresh')
-		
+
 	connect('item_selected', self, '_on_item_selected')
 	connect('gui_input', self, '_on_gui_input')
 	connect('item_edited', self, '_on_item_edited')
-	connect('item_activated', self, 'item_activated')
+	connect('item_activated', self, '_on_item_activated')
+
+var icon_colors = {
+	'speech': Color.olivedrab,
+	'branch': Color.tomato,
+	'comment': Color.steelblue,
+}
 
 func refresh():
 	if root:
@@ -43,52 +49,92 @@ func refresh():
 	if owner:
 		current_conversation = owner.get('current_conversation')
 
-	for convo in Diagraph.conversations:
-		var item = create_item(root)
-		var text = convo
-		var path = convo
-		item.set_text(0, text)
-		item.set_metadata(0, path)
-		item.set_tooltip(0, path)
-		item.set_icon(0, file_icon)
+	var items = {}
 
-		item.collapsed = convo != current_conversation
+	for name in Diagraph.conversations:
+		var path = Diagraph.conversations[name]
+		var parts = path.trim_prefix(Diagraph.conversation_prefix).split('/')
+		var last = parts[len(parts) - 1]
+		var prev = root
+		var chunk = ''
+		for part in parts:
+			chunk += part + '/'
+			if chunk in items:
+				prev = items[chunk]
+				continue
+			var item = create_item(prev)
+			items[chunk] = item
+			prev = item
+			if part == last:  # file
+				item.set_meta('type', 'file')
+				item.set_meta('path', path)
+				item.set_text(0, name.get_file())
+				item.set_icon(0, file_icon)
+				item.set_icon_modulate(0, Color.silver)
+				item.set_tooltip(0, path)
 
-		var nodes = Diagraph.load_conversation(path, {})
-		var node_names = []
-		var nodes_by_name = {}
-		
-		for node in nodes.values():
-			nodes_by_name[node.name] = node
-			node_names.append(node.name)
+				item.disable_folding = true
+				item.collapsed = true
+				if name == current_conversation:
+					item.collapsed = false
 
-		node_names.sort()
+					var nodes = Diagraph.load_conversation(path, {})
+					var node_names = []
+					var nodes_by_name = {}
 
-		for name in node_names:
-			var _item = create_item(item)
-			_item.set_text(0, nodes_by_name[name].name)
-			_item.set_metadata(0, nodes_by_name[name].id)
-			_item.set_icon(0, card_icon)
-			# _item.set_tooltip(0, str(node.id))
+					for node in nodes.values():
+						nodes_by_name[node.name] = node
+						node_names.append(node.name + ':' + str(node.id))
+
+					node_names.sort()
+
+					for node in node_names:
+						var id = node.split(':')[1]
+						var _item = create_item(item)
+						_item.set_meta('type', 'node')
+						_item.set_meta('path', path + ':' + str(id))
+						_item.set_meta('id', id)
+						_item.set_meta('node', nodes[id])
+						_item.set_text(0, nodes[id].name)
+						_item.set_icon(0, card_icon)
+						_item.set_icon_modulate(0, icon_colors[nodes[id].type])
+						_item.set_tooltip(0, nodes[id].type)
+			else:  # folder
+				item.set_meta('type', 'folder')
+				item.set_meta('path', Diagraph.conversation_prefix + chunk)
+				item.set_text(0, part)
+				item.set_tooltip(0, Diagraph.conversation_prefix + chunk)
 
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.pressed:
-		# if event.button_index == 1 and event.doubleclick:
-		# 	item_activated()
-		# 	accept_event()
 		if event.button_index == 2:
 			open_context_menu(event.position)
-			# accept_event()
 
-func item_activated():
+func _on_item_selected() -> void:
 	var item = get_selected()
-	var parent = item.get_parent()
-	var path = get_item_path(item)
+	var path = item.get_meta('path')
+	var type = item.get_meta('type')
 
-	if parent == root:
-		emit_signal('conversation_changed', path)
-	else:
-		emit_signal('card_focused', path)
+	match type:
+		'file':
+			emit_signal('conversation_selected', path)
+		'folder':
+			pass
+		'node':
+			emit_signal('card_selected', path)
+
+func _on_item_activated():
+	var item = get_selected()
+	var path = item.get_meta('path')
+	var type = item.get_meta('type')
+
+	match type:
+		'file':
+			emit_signal('conversation_changed', path)
+		'folder':
+			pass
+		'node':
+			emit_signal('card_focused', path)
 
 # ******************************************************************************
 
@@ -120,28 +166,15 @@ func _on_item_edited():
 
 # ******************************************************************************
 
-func get_item_path(item:TreeItem) -> String:
+func get_item_path(item: TreeItem) -> String:
 	var parent = item.get_parent()
 	if parent == root:
 		return item.get_text(0)
 	else:
 		return parent.get_text(0) + ':' + item.get_text(0)
 
-func _on_item_selected() -> void:
-	var item = get_selected()
-	var parent = item.get_parent()
-	var path = get_item_path(item)
-	
-	if parent == root:
-		item.collapsed = !item.collapsed
-		emit_signal('conversation_selected', path)
-	else:
-		var id = item.get_metadata(0)
-		emit_signal('card_selected', id)
-
 func select_item(path):
 	pass
-	# print('tree select_item ', path)
 
 func delete_item(id):
 	var item = root.get_children()
@@ -188,7 +221,7 @@ func open_context_menu(position) -> void:
 		ctx.add_item('New')
 	ctx.open(get_global_mouse_position())
 
-func context_menu_item_selected(selection:String) -> void:
+func context_menu_item_selected(selection: String) -> void:
 	match selection:
 		'New':
 			var item = create_item(root)
@@ -199,18 +232,23 @@ func context_menu_item_selected(selection:String) -> void:
 			call_deferred('edit_selected')
 		'Copy Path':
 			var item = get_selected()
-			var path = get_item_path(item)
-			OS.clipboard = path
+			var path = item.get_meta('path')
+			path = path.replace('.yarn', '')
+			path = path.replace('.json', '')
+			OS.clipboard = path.trim_prefix(Diagraph.conversation_prefix)
 		'Rename':
 			_start_rename()
 		'Delete':
 			var item = get_selected()
-			item.get_parent().remove_child(item)
-			
-			if item.get_parent() == root:
-				var path = item.get_metadata(0)
-				if path:
+			var path = item.get_meta('path')
+			var type = item.get_meta('type')
+
+			match type:
+				'file':
 					emit_signal('conversation_deleted', path)
-			else:
-				var id = item.get_metadata(0)
-				emit_signal('card_deleted', id)
+				'folder':
+					pass
+				'node':
+					emit_signal('card_deleted', item.get_meta('id'))
+
+			item.get_parent().remove_child(item)

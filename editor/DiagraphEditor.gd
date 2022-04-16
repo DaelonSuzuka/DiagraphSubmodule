@@ -107,19 +107,22 @@ func save_conversation():
 	if !current_conversation:
 		return
 	var nodes = GraphEdit.get_nodes()
-	Diagraph.save_conversation(current_conversation, nodes)
+	if nodes:
+		Diagraph.save_conversation(current_conversation, nodes)
 
 func change_conversation(path):
 	save_conversation()
 	save_editor_data()
 	load_conversation(path)
 
-	var parts = path.split(':')
+	var _path = path.trim_prefix(Diagraph.conversation_prefix)
+	var parts = _path.split(':')
 	if len(parts) > 1:
 		GraphEdit.focus_node(parts[1])
 
 func load_conversation(path):
-	var parts = path.split(':')
+	var _path = path.trim_prefix(Diagraph.conversation_prefix)
+	var parts = _path.split(':')
 	var name = parts[0]
 	if current_conversation == name:
 		return
@@ -168,7 +171,8 @@ func conversation_selected(path):
 	# print('conversation_selected: ', path)
 
 func focus_card(path):
-	var parts = path.split(':')
+	var _path = path.trim_prefix(Diagraph.conversation_prefix)
+	var parts = _path.split(':')
 	if parts[0] != current_conversation:
 		save_conversation()
 		save_editor_data()

@@ -271,7 +271,11 @@ func get_node_by_name(name:String):
 	return null
 
 func focus_node(name:String):
-	var node = get_node_by_name(name)
+	var node = null
+	if name in nodes:
+		node = nodes[name]
+	else:
+		node = get_node_by_name(name)
 	if node:
 		var node_center = (node.offset + (node.rect_size / 2)) * zoom
 		scroll_offset = node_center - (rect_size / 2)

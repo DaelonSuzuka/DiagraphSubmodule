@@ -3,6 +3,8 @@ extends Node
 
 # ******************************************************************************
 
+var prefix := 'user://' if OS.has_feature('HTML5') else 'res://'
+
 var characters_path = 'characters/'
 var character_map_path = characters_path + 'other_characters.json'
 var characters := {}
@@ -11,6 +13,8 @@ var sandbox = load('res://addons/diagraph/Sandbox.gd').new()
 
 var conversation_path := 'conversations/'
 var conversations := {}
+
+var conversation_prefix := prefix + conversation_path
 
 signal refreshed
 
@@ -66,6 +70,9 @@ func load_conversation(name, default=null):
 	return result
 
 func save_conversation(name, data):
+	if !data:
+		# print("can't save empty data")
+		return
 	if name.begins_with('res://'):
 		if name.ends_with('.json'):
 			save_json(name, data)
@@ -107,7 +114,7 @@ func name_to_path(name):
 	return conversation_path + name
 
 func path_to_name(path):
-	return path.trim_prefix(prefix + conversation_path).trim_suffix('.json').trim_suffix('.yarn')
+	return path.trim_prefix(prefix + conversation_path)
 
 func validate_paths():
 	var dir = Directory.new()
@@ -135,7 +142,7 @@ func get_files(path, ext='') -> Array:
 	dir.list_dir_end()
 	return files
 
-func get_all_files(path: String, ext:='', max_depth:=2, depth:=0, files:=[]) -> Array:
+func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> Array:
 	if depth >= max_depth:
 		return []
 	
@@ -160,8 +167,6 @@ func get_all_files(path: String, ext:='', max_depth:=2, depth:=0, files:=[]) -> 
 	return files
 
 # ******************************************************************************
-
-var prefix = 'user://' if OS.has_feature('HTML5') else 'res://'
 
 func save_json(path, data):
 	if !path.begins_with('res://') and !path.begins_with('user://'):
