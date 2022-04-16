@@ -23,7 +23,7 @@ func _ready():
 	data['branches'] = {}
 	for b in branches:
 		data['branches'][b.name] = {'condition': ''}
-	
+
 	set_slot_color_right(1, slot_colors[0])
 	set_slot_color_right(2, slot_colors[1])
 	set_slot_color_right(3, slot_colors[2])

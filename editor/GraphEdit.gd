@@ -22,13 +22,14 @@ var notify_changes := true
 signal zoom_changed(zoom)
 
 var zoom_scroll := false setget set_zoom_scroll
+
 func set_zoom_scroll(state):
 	zoom_scroll = state
 
 signal node_created(node)
 signal node_deleted(id)
 signal node_renamed(old, new)
-signal node_changed()
+signal node_changed
 
 # ******************************************************************************
 
@@ -85,10 +86,7 @@ func on_popup_request(position) -> void:
 	ctx.open(position)
 
 func new_node_requested(type: String) -> void:
-	var data = {
-		type = type.to_lower(),
-		offset = ctx_position
-	}
+	var data = {type = type.to_lower(), offset = ctx_position}
 	if use_snap:
 		var snap = snap_distance
 		data.offset = data.offset.snapped(Vector2(snap, snap))
@@ -138,15 +136,15 @@ func create_node(data=null) -> Node:
 	node.connect('changed', self, 'contents_changed')
 
 	return node
-	
+
 func delete_node(node) -> void:
 	# if we get passed a node id, get the actual node instead
 	if str(node) in nodes:
 		node = nodes[str(node)]
 
 	for con in get_connection_list():
-		if con["from"] == node.name or con["to"] == node.name:
-			request_disconnection(con["from"], con["from_port"], con["to"], con["to_port"])
+		if con['from'] == node.name or con['to'] == node.name:
+			request_disconnection(con['from'], con['from_port'], con['to'], con['to_port'])
 	var id = node.data.id
 	nodes.erase(id)
 	node.queue_free()
@@ -166,9 +164,9 @@ func select_node(node):
 # ******************************************************************************
 
 func request_connection(from, from_slot, to, to_slot) -> bool:
-	for con in get_connection_list():	
-		if con["from"] == from:
-			if con["from_port"] == from_slot:
+	for con in get_connection_list():
+		if con['from'] == from:
+			if con['from_port'] == from_slot:
 				return false
 	if !has_node(from):
 		return false
@@ -186,10 +184,7 @@ func request_disconnection(from, from_slot, to, to_slot) -> void:
 	nodes[from].data.connections.erase(to)
 
 func on_connection_from_empty(to, to_slot, release_position) -> void:
-	var data = {
-		type = 'speech',
-		offset = get_offset_from_mouse()
-	}
+	var data = {type = 'speech', offset = get_offset_from_mouse()}
 	if use_snap:
 		var snap = snap_distance
 		data.offset = data.offset.snapped(Vector2(snap, snap))
@@ -199,16 +194,13 @@ func on_connection_from_empty(to, to_slot, release_position) -> void:
 	request_connection(node.name, 0, to, to_slot)
 
 func on_connection_to_empty(from, from_slot, release_position) -> void:
-	var data = {
-		type = 'speech',
-		offset = get_offset_from_mouse()
-	}
+	var data = {type = 'speech', offset = get_offset_from_mouse()}
 	if use_snap:
 		var snap = snap_distance
 		data.offset = data.offset.snapped(Vector2(snap, snap))
 	data.offset = var2str(data.offset)
 	var node = create_node(data)
-	
+
 	if !request_connection(from, from_slot, node.name, 0):
 		delete_node(node)
 
@@ -264,13 +256,13 @@ func get_selected_nodes() -> Array:
 			selected_nodes.append(child)
 	return selected_nodes
 
-func get_node_by_name(name:String):
+func get_node_by_name(name: String):
 	for node in nodes.values():
 		if is_instance_valid(node) and node.data.name == name:
 			return node
 	return null
 
-func focus_node(name:String):
+func focus_node(name: String):
 	var node = null
 	if name in nodes:
 		node = nodes[name]
@@ -362,7 +354,7 @@ func get_data() -> Dictionary:
 		minimap_enabled = minimap_enabled,
 		minimap_opacity = minimap_opacity,
 		minimap_size = var2str(minimap_size),
-		snap = {
+		snap={
 			on = use_snap,
 			step = snap_distance,
 		},

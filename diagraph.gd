@@ -3,12 +3,12 @@ extends EditorPlugin
 
 # ******************************************************************************
 
-const singleton_path = "res://addons/diagraph/DiagraphSingleton.gd"
+const singleton_path = 'res://addons/diagraph/DiagraphSingleton.gd'
 
-const inspector_class = "res://addons/diagraph/DiagraphInspectorPlugin.gd"
+const inspector_class = 'res://addons/diagraph/DiagraphInspectorPlugin.gd'
 var inspector_instance
 
-const editor_class = "res://addons/diagraph/editor/DiagraphEditor.tscn"
+const editor_class = 'res://addons/diagraph/editor/DiagraphEditor.tscn'
 var editor_instance
 var editor_button
 
@@ -45,7 +45,7 @@ func show_conversation(conversation):
 	editor_instance.change_conversation(conversation)
 
 func get_plugin_icon():
-	return load("resources/diagraph_icon.png")	
+	return load('resources/diagraph_icon.png')
 
 func apply_changes():
 	editor_instance.save_conversation()

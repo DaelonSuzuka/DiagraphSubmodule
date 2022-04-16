@@ -11,8 +11,8 @@ var DismissTimer := Timer.new()
 var original_cooldown := 0.05
 var next_char_cooldown := original_cooldown
 
-signal done()
-signal line_finished()
+signal done
+signal line_finished
 signal character_added(c)
 
 onready var Name = find_node('Name')
@@ -42,7 +42,7 @@ func _ready():
 		remove_child(opt_btn)
 		option_button = opt_btn
 
-# input handling shim 
+# input handling shim
 func _input(event):
 	if direct_input:
 		handle_input(event)
@@ -65,7 +65,7 @@ func add_option(option, value=null):
 		button = OptionButton.instance()
 
 	var arg = value if value else option
-	button.connect("pressed", self, "option_selected", [arg])
+	button.connect('pressed', self, 'option_selected', [arg])
 	button.text = option
 
 	Options.add_child(button)
@@ -268,7 +268,7 @@ func next_line():
 			var _line = current_data.text[i]
 			if _line.begins_with(marker):
 				c_num += 1
-				
+
 				var parts = _line.lstrip(' ' + marker).split('=>')
 				var choice = parts[0]
 				var next = ''
@@ -308,7 +308,7 @@ func next_line():
 	var color = Color.white
 	var name = ''
 	var parts = new_line.split(':')
-	
+
 	if parts.size() > 1:
 		name = parts[0]
 		if '.' in name:
@@ -330,7 +330,7 @@ func next_line():
 				if old_parent:
 					old_parent.remove_child(character)
 				Portrait.add_child(character)
-			
+
 			current_character = character
 			if character.get('color'):
 				color = character.color
@@ -379,7 +379,7 @@ func option_selected(choice):
 	if !next_node:
 		stop()
 		return
-		
+
 	jump_to(next_node)
 
 func jump_to(node):
@@ -406,7 +406,6 @@ func skip_space():
 		if line[cursor] == ' ':
 			cursor += 1
 
-
 func get_block(start_string, end_string, options=[]):
 	var result = null
 	var end = line.findn(end_string, cursor)
@@ -431,14 +430,14 @@ func next_char(use_timer=true):
 		character_idle()
 		TextTimer.stop()
 		line_active = false
-		return 
+		return
 
 	var this_char = line[cursor]
 	var next_char = line[cursor + 1]
 	var cooldown = next_char_cooldown
 
 	match this_char:
-		'{': # detect commands
+		'{':  # detect commands
 			if next_char == '{':
 				var cmd = get_block('{{', '}}', ['erase'])
 				if cmd:
@@ -450,7 +449,7 @@ func next_char(use_timer=true):
 				if cmd:
 					var result = evaluate(cmd)
 					next_char()
-		'<': 
+		'<':
 			if next_char == '<':
 				var cmd = get_block('<<', '>>')
 				if cmd:
@@ -463,27 +462,27 @@ func next_char(use_timer=true):
 				var block = get_block('<', '>', ['nostrip'])
 				if block:
 					print(block)
-		'[': # detect chunks of bbcode
+		'[':  # detect chunks of bbcode
 			var block = get_block('[', ']', ['nostrip'])
 			if block:
 				TextBox.bbcode_text += block
 				next_char()
-		'|': # pipe denotes chunks of text that should pop all at once
+		'|':  # pipe denotes chunks of text that should pop all at once
 			var end = line.findn('|', cursor + 1)
 			if end != -1:
-				var chunk = line.substr(cursor + 1 , end - cursor - 1)
+				var chunk = line.substr(cursor + 1, end - cursor - 1)
 				TextBox.bbcode_text += chunk
 				cursor = end + 1
-		'_': # pause
+		'_':  # pause
 			cooldown = 0.25
 			character_idle()
 			cursor += 1
-		'\\': # escape the next character
+		'\\':  # escape the next character
 			cursor += 1
 			if cursor < line.length():
 				print_char(line[cursor])
 				cursor += 1
-		_: # not a special character, just print it
+		_:  # not a special character, just print it
 			print_char(this_char)
 			cursor += 1
 
@@ -492,7 +491,7 @@ func next_char(use_timer=true):
 
 func print_char(c):
 	character_talk(c)
-	
+
 	TextBox.bbcode_text += c
 	emit_signal('character_added', c)
 
@@ -504,19 +503,25 @@ func process_yarn(command):
 
 # ******************************************************************************
 
-func evaluate(input:String):
+func evaluate(input: String=''):
 	var ctx = Diagraph.sandbox.get_eval_context()
 
 	ctx.variable('onready var caller = get_parent().caller')
 	# ctx.variable('onready var scene = get_parent().caller.owner')
 
 	ctx.variable('var _original_cooldown = ' + str(original_cooldown))
-	ctx.method('func speed(value=_original_cooldown):', [
-		'get_parent().next_char_cooldown = value',
-	])
-	ctx.method('func jump(node):', [
-		'get_parent().jump_to(node)',
-	])
+	ctx.method(
+		'func speed(value=_original_cooldown):',
+		[
+			'get_parent().next_char_cooldown = value',
+		]
+	)
+	ctx.method(
+		'func jump(node):',
+		[
+			'get_parent().jump_to(node)',
+		]
+	)
 
 	var context = ctx.build(self)
 	add_child(context)

@@ -18,7 +18,7 @@ onready var DialogBox = find_node('DialogBox')
 onready var ToggleRightPanel = find_node('ToggleRightPanel')
 onready var ToggleLeftPanel = find_node('ToggleLeftPanel')
 onready var LeftPanelSplit: HSplitContainer = find_node('LeftPanelSplit')
-onready var SettingsMenu:MenuButton = find_node('SettingsMenu')
+onready var SettingsMenu: MenuButton = find_node('SettingsMenu')
 
 var plugin = null
 var current_conversation := ''
@@ -44,7 +44,7 @@ func _ready():
 	Tree.connect('card_focused', self, 'focus_card')
 	Tree.connect('card_renamed', GraphEdit, 'rename_node')
 	Tree.connect('card_deleted', GraphEdit, 'delete_node')
-	
+
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
 
@@ -63,7 +63,7 @@ func _ready():
 	SettingsMenu.add_submenu_item('Font Size Reset', 'FontSize', [self, 'reset_font_size'])
 	SettingsMenu.add_submenu_item('Font Size +', 'FontSize', [self, 'set_font_size', 1])
 	SettingsMenu.add_submenu_item('Font Size -', 'FontSize', [self, 'set_font_size', -1])
-	
+
 	Diagraph.connect('refreshed', self, 'refresh')
 
 	$AutoSave.connect('timeout', self, 'autosave')
@@ -224,7 +224,7 @@ func run():
 		Preview.add_child(DialogBox)
 		DialogBox.connect('done', self, 'stop')
 		DialogBox.start(current_conversation + ':' + node.name)
-	
+
 func stop():
 	$Preview.hide()
 

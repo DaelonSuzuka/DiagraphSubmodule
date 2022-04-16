@@ -42,7 +42,8 @@ func get_locals():
 # ******************************************************************************
 # eval context object
 
-class EvalContext extends Node:
+class EvalContext:
+	extends Node
 	var script_template = """
 extends Node
 """
@@ -68,7 +69,7 @@ extends Node
 
 		for v in variables:
 			source += '\n' + v
-		
+
 		for m in methods:
 			source += '\n' + m
 
@@ -85,11 +86,11 @@ func get_eval_context():
 	var context = EvalContext.new()
 	return context
 
-func evaluate(input:String, context_object=null):
+func evaluate(input: String, context_object=null):
 	var _locals = get_locals()
 	var expression = Expression.new()
 	var result = null
-	
+
 	var error = expression.parse(input, PoolStringArray(_locals.keys()))
 	if error == OK:
 		result = expression.execute(_locals.values(), context_object)
@@ -97,5 +98,5 @@ func evaluate(input:String, context_object=null):
 			return input
 	else:
 		push_warning(expression.get_error_text())
-		
+
 	return result

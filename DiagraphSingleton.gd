@@ -88,7 +88,7 @@ func save_conversation(name, data):
 			save_yarn(conversations[name], data)
 	else:
 		save_yarn(prefix + conversation_path + name + '.yarn', data)
-	
+
 func load_characters():
 	characters.clear()
 	for file_name in get_all_files('res://' + characters_path, '.tscn'):
@@ -131,9 +131,9 @@ func get_files(path, ext='') -> Array:
 
 	while true:
 		var file = dir.get_next()
-		if file == "":
+		if file == '':
 			break
-		elif not file.begins_with("."):
+		elif not file.begins_with('.'):
 			if ext:
 				if file.ends_with(ext):
 					files.append(file)
@@ -145,14 +145,14 @@ func get_files(path, ext='') -> Array:
 func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> Array:
 	if depth >= max_depth:
 		return []
-	
+
 	var dir = Directory.new()
 	dir.open(path)
-	
+
 	dir.list_dir_begin(true, true)
 
 	var file = dir.get_next()
-	while file != "":
+	while file != '':
 		var file_path = dir.get_current_dir().plus_file(file)
 		if dir.current_is_dir():
 			get_all_files(file_path, ext, max_depth, depth + 1, files)
@@ -173,7 +173,7 @@ func save_json(path, data):
 		path = prefix + path
 	var f = File.new()
 	f.open(path, File.WRITE)
-	f.store_string(JSON.print(data, "\t"))
+	f.store_string(JSON.print(data, '\t'))
 	f.close()
 
 func load_json(path, default=null):
@@ -239,7 +239,7 @@ func convert_nodes_to_yarn(data):
 
 func load_yarn(path, default=null):
 	var result = default
-	
+
 	var f = File.new()
 	if f.file_exists(path):
 		f.open(path, File.READ)
@@ -262,12 +262,12 @@ func parse_yarn(text):
 	var lines = text.split('\n')
 	while i < lines.size():
 		var line = lines[i]
-		if line == '===': # end of node
+		if line == '===':  # end of node
 			create_node(header, body)
 			header.clear()
 			body.clear()
 			mode = 'header'
-		elif line == '---': # end of header
+		elif line == '---':  # end of header
 			mode = 'body'
 		else:
 			if mode == 'header':
@@ -293,7 +293,7 @@ func create_node(header, body):
 		text = '',
 		next = 'none',
 	}
-	
+
 	var fields := {}
 	for line in header:
 		var parts = line.split(':', true, 1)

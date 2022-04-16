@@ -70,7 +70,7 @@ func _gui_input(event: InputEvent) -> void:
 # Override this
 func get_title_bar_ctx_items() -> Array:
 	return []
-	
+
 func title_bar_ctx_selection(selection: String):
 	pass
 
@@ -80,7 +80,7 @@ func get_body_ctx_items() -> Array:
 
 func body_ctx_selection(selection: String):
 	pass
-	
+
 # ******************************************************************************
 # Context Menu spawner
 
@@ -120,7 +120,7 @@ func _body_ctx_selection(selection: String):
 func set_id(id) -> void:
 	data.id = id
 	name = str(id)
-	Id.text = str(data.id) + " | "
+	Id.text = str(data.id) + ' | '
 
 func rename(new_name):
 	Title.text = new_name

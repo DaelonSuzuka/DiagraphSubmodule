@@ -23,11 +23,11 @@ onready var choices = [
 
 func _ready():
 	Edit.get_popup().connect('index_pressed', self, 'index_pressed')
-	
+
 	data['show_choices'] = false
 	set_choices_enabled(false)
 	Edit.get_popup().set_item_checked(0, false)
-	
+
 	data['choices'] = {}
 	for c in choices:
 		data['choices'][c.name[6]] = {}
@@ -89,7 +89,7 @@ func set_data(new_data):
 	if 'choices' in new_data:
 		for c in choices:
 			c.set_data(new_data['choices'][c.name[6]])
-			
+
 	.set_data(new_data)
 
 # ******************************************************************************

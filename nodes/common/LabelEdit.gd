@@ -4,6 +4,7 @@ extends Control
 # ******************************************************************************
 
 export var text := '' setget set_text
+
 func set_text(new_text):
 	text = new_text
 	if is_inside_tree():
@@ -50,7 +51,7 @@ func start_editing():
 	line_edit.grab_focus()
 	line_edit.caret_position = line_edit.text.length()
 	line_edit.select_all()
-	
+
 func accept():
 	text = line_edit.text
 	label.text = text

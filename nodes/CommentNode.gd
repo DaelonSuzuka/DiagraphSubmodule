@@ -40,7 +40,7 @@ func begin_move():
 	dragging = true
 	drag_children.clear()
 	start_pos = offset
-	
+
 	var own_region = Rect2(offset, rect_size)
 	for node in get_parent().nodes.values():
 		if node == self or !is_instance_valid(node):
@@ -62,7 +62,7 @@ func end_move():
 
 # ******************************************************************************
 
-func set_stylebox_borders(stylebox:StyleBox, width):
+func set_stylebox_borders(stylebox: StyleBox, width):
 	stylebox.border_width_bottom = width
 	stylebox.border_width_top = width
 	stylebox.border_width_left = width
@@ -70,7 +70,7 @@ func set_stylebox_borders(stylebox:StyleBox, width):
 
 func zoom_changed(zoom):
 	Tooltip.hide()
-	
+
 	var width = max(round(1 / zoom), 1) as int
 
 	set_stylebox_borders(theme.get_stylebox('comment', 'GraphNode'), width)

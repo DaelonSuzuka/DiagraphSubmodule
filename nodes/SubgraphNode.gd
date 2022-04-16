@@ -3,7 +3,7 @@ extends 'BaseNode.gd'
 
 # ******************************************************************************
 
-onready var GraphEdit = find_node("GraphEdit")
+onready var GraphEdit = find_node('GraphEdit')
 
 # ******************************************************************************
 

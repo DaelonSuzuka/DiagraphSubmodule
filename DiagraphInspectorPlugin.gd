@@ -38,7 +38,7 @@ func add_control():
 
 	ep.add_child(hbox)
 	ep.label = 'Conversation'
-	
+
 	add_custom_control(ep)
 
 var selector = null
@@ -95,7 +95,9 @@ func open_conversation():
 # ******************************************************************************
 # Custom container classes
 
-class HBox extends HBoxContainer:
+class HBox:
+	extends HBoxContainer
+
 	func add(object):
 		add_child(object)
 		return object
