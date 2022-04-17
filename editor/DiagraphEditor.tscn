@@ -222,7 +222,6 @@ anchor_bottom = 1.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 right_disconnects = true
-scroll_offset = Vector2( -320, -300 )
 snap_distance = 10
 zoom = 1.1
 zoom_min = 0.1

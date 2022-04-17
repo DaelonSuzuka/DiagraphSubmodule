@@ -278,6 +278,8 @@ func focus_node(name: String):
 		if zoom < 1.0:
 			zoom = 1.0
 
+		select_node(name)
+
 # func focus_selected_nodes():
 # 	var selected_nodes = get_selected_nodes()
 # 	if selected_nodes:

@@ -6,6 +6,9 @@ extends Control
 onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
 onready var Run = find_node('Run')
+onready var Refresh = find_node('Refresh')
+onready var NewFile = find_node('NewFile')
+onready var NewFolder = find_node('NewFolder')
 onready var Save = find_node('Save')
 onready var Stop = find_node('Stop')
 onready var Next = find_node('Next')
@@ -35,6 +38,11 @@ func _ready():
 
 	Preview.hide()
 
+	Refresh.connect('pressed', Tree, 'refresh')
+
+	Tree.connect('folder_created', self, 'create_folder')
+	Tree.connect('folder_deleted', self, 'delete_folder')
+	Tree.connect('folder_renamed', self, 'rename_folder')
 	Tree.connect('conversation_changed', self, 'change_conversation')
 	Tree.connect('conversation_selected', self, 'conversation_selected')
 	Tree.connect('conversation_created', self, 'create_conversation')
@@ -137,9 +145,25 @@ func load_conversation(path):
 	else:
 		editor_data[name] = {}
 
+func create_folder(path):
+	var dir = Directory.new()
+	dir.make_dir_recursive(path)
+		
+func delete_folder(path):
+	var dir = Directory.new()
+	dir.remove(path)
+
+func rename_folder(old, new):
+	var dir = Directory.new()
+	dir.rename(old, new)
+
 func create_conversation(path):
 	GraphEdit.clear()
 	current_conversation = path
+	var file = File.new()
+	file.open(path, File.WRITE)
+	file.store_string('')
+	file.close()
 	Diagraph.refresh()
 
 func delete_conversation(path):
@@ -148,8 +172,10 @@ func delete_conversation(path):
 		current_conversation = ''
 	editor_data.erase(path)
 	save_editor_data()
+	var dir = Directory.new()
+	if path.begins_with(Diagraph.prefix):
+		dir.remove(path)
 	if path in Diagraph.conversations:
-		var dir = Directory.new()
 		dir.remove(Diagraph.prefix + Diagraph.conversations[path])
 	Diagraph.refresh()
 
@@ -157,13 +183,12 @@ func rename_conversation(old, new):
 	if current_conversation == old:
 		GraphEdit.clear()
 		current_conversation = ''
-	editor_data[new] = editor_data[old]
-	editor_data.erase(old)
+	if old in editor_data:
+		editor_data[new] = editor_data[old]
+		editor_data.erase(old)
 	save_editor_data()
 	var dir = Directory.new()
-	var old_path = Diagraph.prefix + Diagraph.conversations[old]
-	var new_path = Diagraph.prefix + Diagraph.conversations[new]
-	dir.rename(old_path, new_path)
+	dir.rename(old, new)
 	load_conversation(new)
 	Diagraph.refresh()
 
@@ -196,6 +221,7 @@ func node_created(path):
 
 func select_card(path):
 	prints('select_card', path)
+	# GraphEdit
 
 # ******************************************************************************
 

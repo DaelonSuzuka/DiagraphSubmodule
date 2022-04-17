@@ -13,6 +13,10 @@ export var folder_icon: ImageTexture
 export var file_icon: ImageTexture
 export var card_icon: ImageTexture
 
+signal folder_created(path)
+signal folder_renamed(old_path, new_path)
+signal folder_deleted(path)
+
 signal conversation_changed(path)
 signal conversation_selected(path)
 signal conversation_created(path)
@@ -68,6 +72,7 @@ func refresh():
 			if part == last:  # file
 				item.set_meta('type', 'file')
 				item.set_meta('path', path)
+				item.set_meta('name', name.get_file())
 				item.set_text(0, name.get_file())
 				item.set_icon(0, file_icon)
 				item.set_icon_modulate(0, Color.silver)
@@ -96,6 +101,7 @@ func refresh():
 						_item.set_meta('id', id)
 						_item.set_meta('node', nodes[id])
 						_item.set_text(0, nodes[id].name)
+						_item.set_meta('name', nodes[id].name)
 						_item.set_icon(0, card_icon)
 						_item.set_icon_modulate(0, icon_colors[nodes[id].type])
 						_item.set_tooltip(0, nodes[id].type)
@@ -103,6 +109,7 @@ func refresh():
 				item.set_meta('type', 'folder')
 				item.set_meta('path', Diagraph.conversation_prefix + chunk)
 				item.set_text(0, part)
+				item.set_meta('name', part)
 				item.set_tooltip(0, Diagraph.conversation_prefix + chunk)
 
 func _on_gui_input(event):
@@ -112,16 +119,17 @@ func _on_gui_input(event):
 
 func _on_item_selected() -> void:
 	var item = get_selected()
-	var path = item.get_meta('path')
 	var type = item.get_meta('type')
+	if item.has_meta('path'):
+		var path = item.get_meta('path')
 
-	match type:
-		'file':
-			emit_signal('conversation_selected', path)
-		'folder':
-			pass
-		'node':
-			emit_signal('card_selected', path)
+		match type:
+			'file':
+				emit_signal('conversation_selected', path)
+			'folder':
+				pass
+			'node':
+				emit_signal('card_selected', item.get_meta('id'))
 
 func _on_item_activated():
 	var item = get_selected()
@@ -145,24 +153,47 @@ func _start_rename():
 
 func _on_item_edited():
 	var item = get_selected()
+	var name = item.get_text(0)
+	var type = item.get_meta('type')
 	item.set_editable(0, false)
-	if item.get_parent() == root:
-		var name = item.get_text(0)
-		var path = item.get_metadata(0)
-		var new_path = name
-		if path:
-			item.set_metadata(0, new_path)
-			item.set_tooltip(0, new_path)
-			emit_signal('conversation_renamed', path, new_path)
-		else:
-			item.set_metadata(0, new_path)
-			item.set_tooltip(0, new_path)
-			emit_signal('conversation_created', new_path)
+	var path := ''
+	var new := false
+	if item.has_meta('path'):
+		path = item.get_meta('path')
 	else:
-		var name = item.get_text(0)
-		var id = item.get_metadata(0)
-		item.set_tooltip(0, name)
-		emit_signal('card_renamed', id, name)
+		new = true
+		var parent = item.get_parent()
+		while parent != root:
+			path = parent.get_text(0) + '/' + path
+			parent = parent.get_parent()
+
+		path += name
+		path = path.trim_prefix('/')
+		item.set_meta('path', path)
+		item.set_meta('name', name)
+		item.set_tooltip(0, path)
+
+	match type:
+		'file':
+			if new:
+				emit_signal('conversation_created', Diagraph.conversation_prefix + path)
+			else:
+				var new_path = path.trim_suffix(item.get_meta('name')) + name
+				item.set_meta('path', new_path)
+				item.set_tooltip(0, new_path)
+				emit_signal('conversation_renamed', path, new_path)
+		'folder':
+			if new:
+				emit_signal('folder_created', Diagraph.conversation_prefix + path)
+			else:
+				var new_path = path.trim_suffix(item.get_meta('name') + '/') + name + '/'
+				item.set_meta('path', new_path)
+				item.set_tooltip(0, new_path)
+				emit_signal('folder_renamed', path, new_path)
+		'node':
+			var id = item.get_meta('id')
+			item.set_tooltip(0, name)
+			emit_signal('card_renamed', id, name)
 
 # ******************************************************************************
 
@@ -205,29 +236,46 @@ func open_context_menu(position) -> void:
 
 	var item = get_item_at_position(position)
 
-	ctx = ContextMenu.new(self, 'context_menu_item_selected')
+	ctx = ContextMenu.new(self, 'context_menu_item_selected', item)
 	if item:
-		if item.get_parent() == root:
-			ctx.add_item('New')
-			ctx.add_item('Copy Path')
-			ctx.add_item('Rename')
-			ctx.add_item('Delete')
-		else:
-			ctx.add_item('Copy Path')
-			# ctx.add_item('Copy Name')
-			ctx.add_item('Rename')
-			ctx.add_item('Delete')
+		var type = item.get_meta('type')
+		match type:
+			'file':
+				ctx.add_item('Copy Path')
+				ctx.add_item('Rename')
+				ctx.add_item('Delete')
+			'folder':
+				ctx.add_item('New File')
+				ctx.add_item('New Folder')
+				ctx.add_item('Rename')
+			'node':
+				ctx.add_item('Copy Path')
+				ctx.add_item('Rename')
+				ctx.add_item('Delete')
 	else:
-		ctx.add_item('New')
+		ctx.add_item('New File')
+		ctx.add_item('New Folder')
 	ctx.open(get_global_mouse_position())
 
-func context_menu_item_selected(selection: String) -> void:
+func context_menu_item_selected(selection: String, selected_item) -> void:
 	match selection:
-		'New':
-			var item = create_item(root)
+		'New File':
+			var item = create_item(selected_item)
 			item.set_text(0, 'new')
+			item.set_meta('name', 'new')
+			item.set_meta('type', 'file')
+			item.set_icon(0, file_icon)
+			item.set_icon_modulate(0, Color.silver)
 			item.set_editable(0, true)
 			item.set_icon(0, file_icon)
+			item.select(0)
+			call_deferred('edit_selected')
+		'New Folder':
+			var item = create_item(selected_item)
+			item.set_text(0, 'new')
+			item.set_meta('name', 'new')
+			item.set_meta('type', 'folder')
+			item.set_editable(0, true)
 			item.select(0)
 			call_deferred('edit_selected')
 		'Copy Path':
@@ -251,4 +299,5 @@ func context_menu_item_selected(selection: String) -> void:
 				'node':
 					emit_signal('card_deleted', item.get_meta('id'))
 
-			item.get_parent().remove_child(item)
+			if is_instance_valid(item):
+				item.get_parent().remove_child(item)

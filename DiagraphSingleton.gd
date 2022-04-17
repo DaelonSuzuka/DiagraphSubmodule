@@ -168,6 +168,30 @@ func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> 
 	dir.list_dir_end()
 	return files
 
+func get_all_files_and_folders(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> Array:
+	if depth >= max_depth:
+		return []
+
+	var dir = Directory.new()
+	dir.open(path)
+
+	dir.list_dir_begin(true, true)
+
+	var file = dir.get_next()
+	while file != '':
+		var file_path = dir.get_current_dir().plus_file(file)
+		if dir.current_is_dir():
+			files.append(dir.get_current_dir())
+			get_all_files_and_folders(file_path, ext, max_depth, depth + 1, files)
+		else:
+			if ext and file.ends_with(ext):
+				files.append(file_path)
+			else:
+				files.append(file_path)
+		file = dir.get_next()
+	dir.list_dir_end()
+	return files
+
 # ******************************************************************************
 
 func save_json(path, data):
