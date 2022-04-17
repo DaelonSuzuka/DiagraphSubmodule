@@ -59,6 +59,7 @@ func _ready():
 	Tree.connect('card_focused', self, 'focus_card')
 	Tree.connect('card_renamed', GraphEdit, 'rename_node')
 	Tree.connect('card_deleted', GraphEdit, 'delete_node')
+	Tree.connect('card_run_requested', self, 'run')
 
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
@@ -92,6 +93,7 @@ func refresh():
 
 func save():
 	save_conversation()
+	Diagraph.refresh()
 
 func autosave():
 	# save_conversation()
@@ -178,25 +180,31 @@ func create_conversation(path):
 var delete_path = null
 onready var original_size = ConfirmDelete.rect_size
 
+func sort(a, b):
+	return a.text.count('\n') > b.text.count('\n')
+
 func delete_conversation(path):
 	delete_path = path
 	ConfirmDelete.dialog_text = 'Really delete conversation "' + path.get_file() + '" ?\n'
 	var nodes = Diagraph.load_conversation(path).values()
+	nodes.sort_custom(self, 'sort')
 	var line_count = 0
 	for i in range(nodes.size()):
-		var count = nodes[i].text.count('\n')
+		var count = nodes[i].text.split('\n').size()
 		line_count += count
 		if i < 5:
 			ConfirmDelete.dialog_text += ' - %s [%s lines]\n' % [nodes[i].name, count]
 		if i == 5:
-			ConfirmDelete.dialog_text += 'plus ' +  str(nodes.size() - i) + ' more..'
+			ConfirmDelete.dialog_text += 'plus ' + str(nodes.size() - i) + ' more..'
 	if nodes.size() > 10 or line_count > 25:
 		ConfirmDelete.get_ok().disabled = true
 		ConfirmDelete.get_ok().text = '3..'
 		get_tree().create_timer(1.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['2..'])
 		get_tree().create_timer(2.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['1..'])
 		get_tree().create_timer(3.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['Ok'])
-		get_tree().create_timer(3.0).connect('timeout', ConfirmDelete.get_ok(), 'set_disabled', [false])
+		get_tree().create_timer(3.0).connect(
+			'timeout', ConfirmDelete.get_ok(), 'set_disabled', [false]
+		)
 	ConfirmDelete.popup_centered()
 	ConfirmDelete.rect_size.y = 0
 	ConfirmationDimmer.show()

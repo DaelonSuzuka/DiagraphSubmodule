@@ -28,6 +28,7 @@ signal card_selected(path)
 signal card_focused(path)
 signal card_renamed(id, new_path)
 signal card_deleted(id)
+signal card_run_requested
 
 var folder_state = {}
 
@@ -274,6 +275,7 @@ func open_context_menu(position) -> void:
 				ctx.add_item('Rename')
 				ctx.add_item('Delete')
 			'node':
+				ctx.add_item('Run')
 				ctx.add_item('Copy Path')
 				ctx.add_item('Rename')
 				ctx.add_item('Delete')
@@ -318,6 +320,8 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 			OS.clipboard = path.trim_prefix(Diagraph.conversation_prefix)
 		'Rename':
 			_start_rename()
+		'Run':
+			emit_signal('card_run_requested')
 		'Delete':
 			var item = get_selected()
 			var path = item.get_meta('path')
