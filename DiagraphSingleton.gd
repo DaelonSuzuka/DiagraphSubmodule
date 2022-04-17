@@ -24,15 +24,17 @@ func _ready():
 	validate_paths()
 	call_deferred('refresh')
 
-	# if !Engine.editor_hint or plugin:
-	# 	if OS.has_feature('HTML5'):
-	# 		var files = get_files('res://' + conversation_path, '.json')
-	# 		for file in files:
-	# 			var from_path = 'res://' + conversation_path + file
-	# 			var to_path = 'user://' + conversation_path + file
-	# 			var convo = load_json(from_path)
-	# 			if convo:
-	# 				save_json(to_path, convo)
+	# if OS.has_feature('HTML5'):
+	# 	for file in get_files('res://' + conversation_path, '.json'):
+	# 		var from_path = 'res://' + conversation_path + file
+	# 		var to_path = 'user://' + conversation_path + file
+	# 		print('copying file', from_path)
+	# 		save_json(to_path, load_json(from_path))
+	# 	for file in get_files('res://' + conversation_path, '.yarn'):
+	# 		var from_path = 'res://' + conversation_path + file
+	# 		var to_path = 'user://' + conversation_path + file
+	# 		print('copying file', from_path)
+	# 		save_yarn(to_path, load_yarn(from_path))
 
 func refresh():
 	load_conversations()
@@ -169,6 +171,8 @@ func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> 
 # ******************************************************************************
 
 func save_json(path, data):
+	if !data:
+		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
 		path = prefix + path
 	var f = File.new()
@@ -193,6 +197,8 @@ func load_json(path, default=null):
 # ******************************************************************************
 
 func save_yarn(path, data):
+	if !data:
+		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
 		path = prefix + path
 
