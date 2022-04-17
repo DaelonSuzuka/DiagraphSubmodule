@@ -214,6 +214,32 @@ func set_node(next_node):
 	current_data = nodes[current_node].duplicate(true)
 	current_data.text = split_text(current_data.text)
 
+func check_next_line(line_number):
+	if length > 0 and line_count >= length:
+		return
+	if line_number == current_data.text.size():
+		if current_data.next == 'choice':
+			display_choices()
+		return
+	
+	var new_line = current_data.text[line_number]
+
+	var skip := false
+	if new_line.length() == 0 or new_line.begins_with('#') or new_line.begins_with('//'):
+		check_next_line(line_number + 1)
+		return
+	
+	var marker = null
+	if new_line.begins_with('->'):
+		marker = '->'
+	elif new_line.begins_with('-'):
+		marker = '-'
+
+	if marker:
+		current_line = line_number
+		current_data.choices = process_inline_choices(marker)
+		display_choices()
+
 func next_line():
 	if line_active:
 		while line_active:
@@ -262,45 +288,7 @@ func next_line():
 		marker = '-'
 
 	if marker:
-		var c_num = 0
-		var choices = {}
-		for i in range(current_line, current_data.text.size()):
-			var _line = current_data.text[i]
-			if _line.begins_with(marker):
-				c_num += 1
-
-				var parts = _line.lstrip(' ' + marker).split('=>')
-				var choice = parts[0]
-				var next = ''
-				if parts.size() == 2:
-					next = parts[1].lstrip(' ')
-				choices[str(c_num)] = {
-					choice = choice,
-					condition = '',
-					next = next,
-					body = [],
-				}
-			if _line.begins_with('    '):
-				choices[str(c_num)].body.append(_line.trim_prefix('    '))
-			if _line.begins_with('\t'):
-				choices[str(c_num)].body.append(_line.trim_prefix('\t'))
-
-		for c in choices:
-			if choices[c].body:
-				var node = {
-					name = '',
-					text = '',
-					next = 'none',
-					type = 'speech',
-					id = get_id(),
-				}
-				node.name = str(node.id)
-				choices[c].next = str(node.id)
-				for line in choices[c].body:
-					node.text += line + '\n'
-				nodes[str(node.id)] = node
-
-		current_data.choices = choices
+		current_data.choices = process_inline_choices(marker)
 		display_choices()
 		return
 
@@ -357,6 +345,46 @@ func next_line():
 
 	line_count += 1
 	current_line += 1
+
+func process_inline_choices(marker):
+	var c_num = 0
+	var choices = {}
+	for i in range(current_line, current_data.text.size()):
+		var _line = current_data.text[i]
+		if _line.begins_with(marker):
+			c_num += 1
+
+			var parts = _line.lstrip(' ' + marker).split('=>')
+			var choice = parts[0]
+			var next = ''
+			if parts.size() == 2:
+				next = parts[1].lstrip(' ')
+			choices[str(c_num)] = {
+				choice = choice,
+				condition = '',
+				next = next,
+				body = [],
+			}
+		if _line.begins_with('    '):
+			choices[str(c_num)].body.append(_line.trim_prefix('    '))
+		if _line.begins_with('\t'):
+			choices[str(c_num)].body.append(_line.trim_prefix('\t'))
+
+	for c in choices:
+		if choices[c].body:
+			var node = {
+				name = '',
+				text = '',
+				next = 'none',
+				type = 'speech',
+				id = get_id(),
+			}
+			node.name = str(node.id)
+			choices[c].next = str(node.id)
+			for line in choices[c].body:
+				node.text += line + '\n'
+			nodes[str(node.id)] = node
+	return choices
 
 func display_choices():
 	waiting_for_choice = true
@@ -430,6 +458,7 @@ func next_char(use_timer=true):
 		character_idle()
 		TextTimer.stop()
 		line_active = false
+		check_next_line(current_line)
 		return
 
 	var this_char = line[cursor]
