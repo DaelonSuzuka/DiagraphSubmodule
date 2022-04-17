@@ -433,7 +433,9 @@ func next_char(use_timer=true):
 		return
 
 	var this_char = line[cursor]
-	var next_char = line[cursor + 1]
+	var next_char = ''
+	if cursor + 1 < line.length() - 1:
+		next_char = line[cursor + 1]
 	var cooldown = next_char_cooldown
 
 	match this_char:
