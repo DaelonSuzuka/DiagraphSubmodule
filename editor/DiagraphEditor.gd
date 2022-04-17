@@ -148,8 +148,9 @@ func delete_conversation(path):
 		current_conversation = ''
 	editor_data.erase(path)
 	save_editor_data()
-	var dir = Directory.new()
-	dir.remove(Diagraph.prefix + Diagraph.conversations[path])
+	if path in Diagraph.conversations:
+		var dir = Directory.new()
+		dir.remove(Diagraph.prefix + Diagraph.conversations[path])
 	Diagraph.refresh()
 
 func rename_conversation(old, new):
