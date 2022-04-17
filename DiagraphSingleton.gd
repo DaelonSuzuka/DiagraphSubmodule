@@ -54,7 +54,7 @@ func load_conversation(name, default=null):
 	var result = default
 
 	# handle complete path
-	if name.begins_with('res://'):
+	if name.begins_with(prefix):
 		if name.ends_with('.json'):
 			result = load_json(name, default)
 		if name.ends_with('.yarn'):
@@ -75,7 +75,7 @@ func save_conversation(name, data):
 	if !data:
 		# print("can't save empty data")
 		return
-	if name.begins_with('res://'):
+	if name.begins_with(prefix):
 		if name.ends_with('.json'):
 			save_json(name, data)
 		if name.ends_with('.yarn'):
@@ -144,7 +144,7 @@ func get_files(path, ext='') -> Array:
 	dir.list_dir_end()
 	return files
 
-func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> Array:
+func get_all_files(path: String, ext:='', max_depth:=10, depth:=0, files:=[]) -> Array:
 	if depth >= max_depth:
 		return []
 
@@ -168,7 +168,7 @@ func get_all_files(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> 
 	dir.list_dir_end()
 	return files
 
-func get_all_files_and_folders(path: String, ext:='', max_depth:=4, depth:=0, files:=[]) -> Array:
+func get_all_files_and_folders(path: String, ext:='', max_depth:=10, depth:=0, files:=[]) -> Array:
 	if depth >= max_depth:
 		return []
 

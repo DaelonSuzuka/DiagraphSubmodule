@@ -13,6 +13,7 @@ export var folder_icon: ImageTexture
 export var file_icon: ImageTexture
 export var card_icon: ImageTexture
 
+signal folder_collapsed
 signal folder_created(path)
 signal folder_renamed(old_path, new_path)
 signal folder_deleted(path)
@@ -28,6 +29,14 @@ signal card_focused(path)
 signal card_renamed(id, new_path)
 signal card_deleted(id)
 
+var folder_state = {}
+
+var icon_colors = {
+	'speech': Color.olivedrab,
+	'branch': Color.tomato,
+	'comment': Color.steelblue,
+}
+
 # ******************************************************************************
 
 func _ready():
@@ -37,17 +46,14 @@ func _ready():
 	connect('gui_input', self, '_on_gui_input')
 	connect('item_edited', self, '_on_item_edited')
 	connect('item_activated', self, '_on_item_activated')
-
-var icon_colors = {
-	'speech': Color.olivedrab,
-	'branch': Color.tomato,
-	'comment': Color.steelblue,
-}
+	connect('item_collapsed', self, '_on_item_collapsed')
 
 func refresh():
 	if root:
 		root.free()
 	root = create_item()
+
+	disconnect('item_collapsed', self, '_on_item_collapsed')
 
 	var current_conversation = ''
 	if owner:
@@ -106,16 +112,31 @@ func refresh():
 						_item.set_icon_modulate(0, icon_colors[nodes[id].type])
 						_item.set_tooltip(0, nodes[id].type)
 			else:  # folder
+				var _path = Diagraph.conversation_prefix + chunk
+
+				if _path in folder_state:
+					item.collapsed = folder_state[_path].collapsed
+				else:
+					folder_state[_path] = {'collapsed': false}
+
 				item.set_meta('type', 'folder')
-				item.set_meta('path', Diagraph.conversation_prefix + chunk)
+				item.set_meta('path', _path)
 				item.set_text(0, part)
 				item.set_meta('name', part)
-				item.set_tooltip(0, Diagraph.conversation_prefix + chunk)
+				item.set_tooltip(0, _path)
+
+	connect('item_collapsed', self, '_on_item_collapsed')
 
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == 2:
 			open_context_menu(event.position)
+
+func _on_item_collapsed(item):
+	var type = item.get_meta('type')
+	if type == 'folder':
+		var path = item.get_meta('path')
+		folder_state[path] = {'collapsed': item.collapsed}
 
 func _on_item_selected() -> void:
 	var item = get_selected()
@@ -184,6 +205,7 @@ func _on_item_edited():
 				emit_signal('conversation_renamed', path, new_path)
 		'folder':
 			if new:
+				folder_state[Diagraph.conversation_prefix + path] = {'collapsed': false}
 				emit_signal('folder_created', Diagraph.conversation_prefix + path)
 			else:
 				var new_path = path.trim_suffix(item.get_meta('name') + '/') + name + '/'
@@ -241,6 +263,8 @@ func open_context_menu(position) -> void:
 		var type = item.get_meta('type')
 		match type:
 			'file':
+				if item.get_meta('path').ends_with('json'):
+					ctx.add_item('Convert to Yarn')
 				ctx.add_item('Copy Path')
 				ctx.add_item('Rename')
 				ctx.add_item('Delete')
@@ -248,6 +272,7 @@ func open_context_menu(position) -> void:
 				ctx.add_item('New File')
 				ctx.add_item('New Folder')
 				ctx.add_item('Rename')
+				ctx.add_item('Delete')
 			'node':
 				ctx.add_item('Copy Path')
 				ctx.add_item('Rename')
@@ -259,6 +284,13 @@ func open_context_menu(position) -> void:
 
 func context_menu_item_selected(selection: String, selected_item) -> void:
 	match selection:
+		'Convert to Yarn':
+			var item = get_selected()
+			var path = item.get_meta('path')
+			var nodes = Diagraph.load_conversation(path)
+			if nodes:
+				Diagraph.save_yarn(path.replace('.json', '.yarn'), nodes)
+			Diagraph.refresh()
 		'New File':
 			var item = create_item(selected_item)
 			item.set_text(0, 'new')
@@ -295,7 +327,7 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 				'file':
 					emit_signal('conversation_deleted', path)
 				'folder':
-					pass
+					emit_signal('folder_deleted', path)
 				'node':
 					emit_signal('card_deleted', item.get_meta('id'))
 

@@ -5,7 +5,10 @@ extends Control
 
 onready var GraphEdit: GraphEdit = find_node('GraphEdit')
 onready var Tree: Tree = find_node('Tree')
+onready var ConfirmClear: ConfirmationDialog = find_node('ConfirmClear')
+onready var ConfirmDelete: ConfirmationDialog = find_node('ConfirmDelete')
 onready var Run = find_node('Run')
+onready var ConfirmationDimmer = find_node('ConfirmationDimmer')
 onready var Refresh = find_node('Refresh')
 onready var NewFile = find_node('NewFile')
 onready var NewFolder = find_node('NewFolder')
@@ -37,9 +40,13 @@ func _ready():
 	Debug.connect('toggled', $Preview/DialogBox/DebugLog, 'set_visible')
 
 	Preview.hide()
+	ConfirmDelete.connect('popup_hide', Diagraph, 'refresh')
+	ConfirmDelete.connect('popup_hide', ConfirmationDimmer, 'hide')
+	ConfirmDelete.connect('confirmed', self, 'really_delete_conversation')
 
-	Refresh.connect('pressed', Tree, 'refresh')
+	Refresh.connect('pressed', Diagraph, 'refresh')
 
+	Tree.connect('folder_collapsed', self, 'save_editor_data')
 	Tree.connect('folder_created', self, 'create_folder')
 	Tree.connect('folder_deleted', self, 'delete_folder')
 	Tree.connect('folder_renamed', self, 'rename_folder')
@@ -148,14 +155,16 @@ func load_conversation(path):
 func create_folder(path):
 	var dir = Directory.new()
 	dir.make_dir_recursive(path)
-		
+
 func delete_folder(path):
 	var dir = Directory.new()
 	dir.remove(path)
+	Diagraph.refresh()
 
 func rename_folder(old, new):
 	var dir = Directory.new()
 	dir.rename(old, new)
+	Diagraph.refresh()
 
 func create_conversation(path):
 	GraphEdit.clear()
@@ -166,17 +175,43 @@ func create_conversation(path):
 	file.close()
 	Diagraph.refresh()
 
+var delete_path = null
+onready var original_size = ConfirmDelete.rect_size
+
 func delete_conversation(path):
-	if current_conversation == path:
+	delete_path = path
+	ConfirmDelete.dialog_text = 'Really delete conversation "' + path.get_file() + '" ?\n'
+	var nodes = Diagraph.load_conversation(path).values()
+	var line_count = 0
+	for i in range(nodes.size()):
+		var count = nodes[i].text.count('\n')
+		line_count += count
+		if i < 5:
+			ConfirmDelete.dialog_text += ' - %s [%s lines]\n' % [nodes[i].name, count]
+		if i == 5:
+			ConfirmDelete.dialog_text += 'plus ' +  str(nodes.size() - i) + ' more..'
+	if nodes.size() > 10 or line_count > 25:
+		ConfirmDelete.get_ok().disabled = true
+		ConfirmDelete.get_ok().text = '3..'
+		get_tree().create_timer(1.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['2..'])
+		get_tree().create_timer(2.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['1..'])
+		get_tree().create_timer(3.0).connect('timeout', ConfirmDelete.get_ok(), 'set_text', ['Ok'])
+		get_tree().create_timer(3.0).connect('timeout', ConfirmDelete.get_ok(), 'set_disabled', [false])
+	ConfirmDelete.popup_centered()
+	ConfirmDelete.rect_size.y = 0
+	ConfirmationDimmer.show()
+
+func really_delete_conversation():
+	if current_conversation == delete_path:
 		GraphEdit.clear()
 		current_conversation = ''
-	editor_data.erase(path)
+	editor_data.erase(delete_path)
 	save_editor_data()
 	var dir = Directory.new()
-	if path.begins_with(Diagraph.prefix):
-		dir.remove(path)
-	if path in Diagraph.conversations:
-		dir.remove(Diagraph.prefix + Diagraph.conversations[path])
+	if delete_path.begins_with(Diagraph.prefix):
+		dir.remove(delete_path)
+	if delete_path in Diagraph.conversations:
+		dir.remove(Diagraph.prefix + Diagraph.conversations[delete_path])
 	Diagraph.refresh()
 
 func rename_conversation(old, new):
@@ -265,6 +300,7 @@ var editor_data_file_name = 'user://editor_data.json'
 func save_editor_data():
 	if !current_conversation:
 		return
+	editor_data['folder_state'] = Tree.folder_state
 	editor_data['current_conversation'] = current_conversation
 	editor_data['font_size'] = theme.default_font.size
 	editor_data['zoom_scroll'] = GraphEdit.zoom_scroll
@@ -280,6 +316,9 @@ func load_editor_data():
 		load_conversation(editor_data['current_conversation'])
 		return
 	editor_data = data
+
+	if 'folder_state' in editor_data:
+		Tree.folder_state = editor_data['folder_state']
 	if 'current_conversation' in editor_data:
 		load_conversation(editor_data['current_conversation'])
 

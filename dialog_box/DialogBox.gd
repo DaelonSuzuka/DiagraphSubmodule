@@ -140,7 +140,7 @@ func start(conversation, options={}):
 	remove_options()
 
 	# parse conversation string
-	if conversation.begins_with('res://'):
+	if conversation.begins_with(Diagraph.prefix):
 		name = conversation
 	else:
 		var parts = conversation.split(':')
