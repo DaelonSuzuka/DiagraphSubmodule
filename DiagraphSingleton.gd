@@ -89,15 +89,15 @@ func save_conversation(path, data):
 
 func load_characters():
 	characters.clear()
-	for file_path in get_all_files('res://' + characters_path, '.tscn'):
-		var c = load(file_name).instance()
+	for file in get_all_files('res://' + characters_path, '.tscn'):
+		var c = load(file).instance()
 		characters[c.name] = c
 
 	# for folder in get_files('res://' + characters_path):
 	# 	for file in get_files('res://' + characters_path + folder, '.tscn'):
-	# 		var file_name = 'res://' + characters_path + folder + '/' + file
-	# 		if dir.file_exists(file_name):
-	# 			var c = load(file_name).instance()
+	# 		var file = 'res://' + characters_path + folder + '/' + file
+	# 		if dir.file_exists(file):
+	# 			var c = load(file).instance()
 	# 			characters[c.name] = c
 
 	# var dir := Directory.new()
