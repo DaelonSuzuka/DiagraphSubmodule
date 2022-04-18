@@ -26,15 +26,11 @@ func _ready():
 
 	if OS.has_feature('HTML5'):
 		for file in get_all_files('res://' + conversation_path, '.json'):
-			var from_path = file
 			var to_path = file.replace('res://', 'user://')
-			print('copying file', from_path)
-			save_json(to_path, load_json(from_path))
+			save_json(to_path, load_json(file))
 		for file in get_all_files('res://' + conversation_path, '.yarn'):
-			var from_path = file
 			var to_path = file.replace('res://', 'user://')
-			print('copying file', from_path)
-			save_yarn(to_path, load_yarn(from_path))
+			save_yarn(to_path, load_yarn(file))
 
 func refresh():
 	load_conversations()
@@ -50,50 +46,50 @@ func load_conversations():
 	for convo in yarn_conversations:
 		conversations[path_to_name(convo)] = convo
 
-func load_conversation(name, default=null):
+func load_conversation(path, default=null):
 	var result = default
 
 	# handle complete path
-	if name.begins_with(prefix):
-		if name.ends_with('.json'):
-			result = load_json(name, default)
-		if name.ends_with('.yarn'):
-			result = load_yarn(name, default)
+	if path.begins_with(prefix):
+		if path.ends_with('.json'):
+			result = load_json(path, default)
+		if path.ends_with('.yarn'):
+			result = load_yarn(path, default)
 		return result
 
-	if !(name in conversations):
+	if !(path in conversations):
 		return result
 
-	# handle shorthand convo name
-	if conversations[name].ends_with('.json'):
-		result = load_json(conversations[name], default)
-	if conversations[name].ends_with('.yarn'):
-		result = load_yarn(conversations[name], default)
+	# handle shorthand convo path
+	if conversations[path].ends_with('.json'):
+		result = load_json(conversations[path], default)
+	if conversations[path].ends_with('.yarn'):
+		result = load_yarn(conversations[path], default)
 	return result
 
-func save_conversation(name, data):
+func save_conversation(path, data):
 	if !data:
 		# print("can't save empty data")
 		return
-	if name.begins_with(prefix):
-		if name.ends_with('.json'):
-			save_json(name, data)
-		if name.ends_with('.yarn'):
-			save_yarn(name, data)
+	if path.begins_with(prefix):
+		if path.ends_with('.json'):
+			save_json(path, data)
+		if path.ends_with('.yarn'):
+			save_yarn(path, data)
 		return
-	if name in conversations:
-		if conversations[name].ends_with('.json'):
-			save_json(conversations[name], data)
-			# var path = conversations[name].replace('.json', '.yarn')
+	if path in conversations:
+		if conversations[path].ends_with('.json'):
+			save_json(conversations[path], data)
+			# var path = conversations[path].replace('.json', '.yarn')
 			# save_yarn(path, data)
-		if conversations[name].ends_with('.yarn'):
-			save_yarn(conversations[name], data)
+		if conversations[path].ends_with('.yarn'):
+			save_yarn(conversations[path], data)
 	else:
-		save_yarn(prefix + conversation_path + name + '.yarn', data)
+		save_yarn(prefix + conversation_path + path + '.yarn', data)
 
 func load_characters():
 	characters.clear()
-	for file_name in get_all_files('res://' + characters_path, '.tscn'):
+	for file_path in get_all_files('res://' + characters_path, '.tscn'):
 		var c = load(file_name).instance()
 		characters[c.name] = c
 
@@ -199,6 +195,10 @@ func save_json(path, data):
 		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
 		path = prefix + path
+
+	var dir = Directory.new()
+	dir.make_dir_recursive(path.get_base_dir())
+
 	var f = File.new()
 	f.open(path, File.WRITE)
 	f.store_string(JSON.print(data, '\t'))
@@ -225,6 +225,9 @@ func save_yarn(path, data):
 		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
 		path = prefix + path
+
+	var dir = Directory.new()
+	dir.make_dir_recursive(path.get_base_dir())
 
 	var out = convert_nodes_to_yarn(data)
 
