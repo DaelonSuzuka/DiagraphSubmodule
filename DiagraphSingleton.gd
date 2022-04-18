@@ -177,7 +177,7 @@ func get_all_files_and_folders(path: String, ext:='', max_depth:=10, depth:=0, f
 	while file != '':
 		var file_path = dir.get_current_dir().plus_file(file)
 		if dir.current_is_dir():
-			files.append(dir.get_current_dir())
+			files.append(file_path)
 			get_all_files_and_folders(file_path, ext, max_depth, depth + 1, files)
 		else:
 			if ext and file.ends_with(ext):

@@ -14,21 +14,20 @@ export var file_icon: ImageTexture
 export var card_icon: ImageTexture
 
 signal folder_collapsed
-signal folder_created(path)
-signal folder_renamed(old_path, new_path)
-signal folder_deleted(path)
+signal create_folder(path)
+signal rename_folder(old_path, new_path)
+signal delete_folder(path)
 
-signal conversation_changed(path)
-signal conversation_selected(path)
-signal conversation_created(path)
-signal conversation_deleted(path)
-signal conversation_renamed(old_path, new_path)
+signal change_conversation(path)
+signal create_conversation(path)
+signal delete_conversation(path)
+signal rename_conversation(old_path, new_path)
 
-signal card_selected(path)
-signal card_focused(path)
-signal card_renamed(id, new_path)
-signal card_deleted(id)
-signal card_run_requested
+signal select_node(path)
+signal focus_node(path)
+signal rename_node(id, new_path)
+signal delete_node(id)
+signal run_node
 
 var folder_state = {}
 
@@ -56,77 +55,117 @@ func refresh():
 
 	disconnect('item_collapsed', self, '_on_item_collapsed')
 
+	var items := {}
+
+	var dir = Directory.new()
+	var files = Diagraph.get_all_files_and_folders(Diagraph.conversation_prefix)
+	files.erase(Diagraph.conversation_prefix.trim_suffix('/'))
+	files.erase(Diagraph.conversation_prefix)
+
+	var file_data = []
+
+	for file in files:
+		var path = file.trim_prefix(Diagraph.conversation_prefix)
+		if file == 'res://conversations':
+			continue
+
+		var parts = []
+		if dir.dir_exists(file):
+			parts = path.split('/')
+		if dir.file_exists(file):
+			parts = path.get_base_dir().split('/')
+
+		var prev = root
+		var chunk = ''
+
+		for part in parts:
+			chunk += part + '/'
+			if chunk == '/':
+				continue
+			if chunk in items:
+				prev = items[chunk]
+				continue
+
+			prev = create_folder_item(prev, file)
+			items[chunk] = prev
+
+		if !dir.file_exists(file):
+			continue
+
+		file_data.append({file = file, prev = prev, path = path})
+
 	var current_conversation = ''
 	if owner:
 		current_conversation = owner.get('current_conversation')
 
-	var items = {}
+	for data in file_data:
+		var item = create_file_item(data.prev, data.path)
 
-	for name in Diagraph.conversations:
-		var path = Diagraph.conversations[name]
-		var parts = path.trim_prefix(Diagraph.conversation_prefix).split('/')
-		var last = parts[len(parts) - 1]
-		var prev = root
-		var chunk = ''
-		for part in parts:
-			chunk += part + '/'
-			if chunk in items:
-				prev = items[chunk]
-				continue
-			var item = create_item(prev)
-			items[chunk] = item
-			prev = item
-			if part == last:  # file
-				item.set_meta('type', 'file')
-				item.set_meta('path', path)
-				item.set_meta('name', name.get_file())
-				item.set_text(0, name.get_file())
-				item.set_icon(0, file_icon)
-				item.set_icon_modulate(0, Color.silver)
-				item.set_tooltip(0, path)
+		if data.path.get_file() == current_conversation:
+			item.set_icon_modulate(0, Color.white)
+			item.collapsed = false
+			item.disable_folding = false
 
-				item.disable_folding = true
-				item.collapsed = true
-				if name == current_conversation:
-					item.collapsed = false
+			var nodes = Diagraph.load_conversation(data.path, {})
+			var node_names = []
+			var nodes_by_name = {}
 
-					var nodes = Diagraph.load_conversation(path, {})
-					var node_names = []
-					var nodes_by_name = {}
+			for node in nodes.values():
+				nodes_by_name[node.name] = node
+				node_names.append(node.name + ':' + str(node.id))
 
-					for node in nodes.values():
-						nodes_by_name[node.name] = node
-						node_names.append(node.name + ':' + str(node.id))
+			node_names.sort()
 
-					node_names.sort()
-
-					for node in node_names:
-						var id = node.split(':')[1]
-						var _item = create_item(item)
-						_item.set_meta('type', 'node')
-						_item.set_meta('path', path + ':' + str(id))
-						_item.set_meta('id', id)
-						_item.set_meta('node', nodes[id])
-						_item.set_text(0, nodes[id].name)
-						_item.set_meta('name', nodes[id].name)
-						_item.set_icon(0, card_icon)
-						_item.set_icon_modulate(0, icon_colors[nodes[id].type])
-						_item.set_tooltip(0, nodes[id].type)
-			else:  # folder
-				var _path = Diagraph.conversation_prefix + chunk
-
-				if _path in folder_state:
-					item.collapsed = folder_state[_path].collapsed
-				else:
-					folder_state[_path] = {'collapsed': false}
-
-				item.set_meta('type', 'folder')
-				item.set_meta('path', _path)
-				item.set_text(0, part)
-				item.set_meta('name', part)
-				item.set_tooltip(0, _path)
+			for node in node_names:
+				var id = node.split(':')[1]
+				create_node_item(item, data.file, nodes[id])
 
 	connect('item_collapsed', self, '_on_item_collapsed')
+
+func create_file_item(parent, path):
+	var item = create_item(parent)
+	item.set_meta('type', 'file')
+	item.set_meta('path', path)
+	item.set_meta('name', path.get_file())
+	item.set_text(0, path.get_file())
+	item.set_icon(0, file_icon)
+	item.set_icon_modulate(0, Color.silver)
+	item.set_tooltip(0, path)
+
+	item.disable_folding = true
+	item.collapsed = true
+	return item
+
+func create_node_item(parent, path, node):
+	var item = create_item(parent)
+	item.set_meta('type', 'node')
+	item.set_meta('path', path + ':' + str(node.id))
+	item.set_meta('id', node.id)
+	item.set_meta('node', node)
+	item.set_text(0, node.name)
+	item.set_meta('name', node.name)
+	item.set_icon(0, card_icon)
+	item.set_icon_modulate(0, icon_colors[node.type])
+	item.set_tooltip(0, node.type)
+	return item
+
+func create_folder_item(parent, path):
+	var item = create_item(parent)
+
+	if path in folder_state:
+		item.collapsed = folder_state[path].collapsed
+	else:
+		folder_state[path] = {'collapsed': false}
+
+	item.set_custom_color(0, Color.darkgray)
+	item.set_meta('type', 'folder')
+	item.set_meta('path', path)
+	item.set_text(0, path.get_file())
+	item.set_meta('name', path.get_file())
+	item.set_tooltip(0, path)
+	return item
+
+# ******************************************************************************
 
 func _on_gui_input(event):
 	if event is InputEventMouseButton and event.pressed:
@@ -147,11 +186,11 @@ func _on_item_selected() -> void:
 
 		match type:
 			'file':
-				emit_signal('conversation_selected', path)
+				pass
 			'folder':
 				pass
 			'node':
-				emit_signal('card_selected', item.get_meta('id'))
+				emit_signal('select_node', item.get_meta('id'))
 
 func _on_item_activated():
 	var item = get_selected()
@@ -160,11 +199,11 @@ func _on_item_activated():
 
 	match type:
 		'file':
-			emit_signal('conversation_changed', path)
+			emit_signal('change_conversation', path)
 		'folder':
 			pass
 		'node':
-			emit_signal('card_focused', path)
+			emit_signal('focus_node', path)
 
 # ******************************************************************************
 
@@ -198,25 +237,25 @@ func _on_item_edited():
 	match type:
 		'file':
 			if new:
-				emit_signal('conversation_created', Diagraph.conversation_prefix + path)
+				emit_signal('create_conversation', Diagraph.conversation_prefix + path)
 			else:
 				var new_path = path.trim_suffix(item.get_meta('name')) + name
 				item.set_meta('path', new_path)
 				item.set_tooltip(0, new_path)
-				emit_signal('conversation_renamed', path, new_path)
+				emit_signal('rename_conversation', path, new_path)
 		'folder':
 			if new:
 				folder_state[Diagraph.conversation_prefix + path] = {'collapsed': false}
-				emit_signal('folder_created', Diagraph.conversation_prefix + path)
+				emit_signal('create_folder', Diagraph.conversation_prefix + path)
 			else:
-				var new_path = path.trim_suffix(item.get_meta('name') + '/') + name + '/'
+				var new_path = path.trim_suffix(path.get_file()) + name + '/'
 				item.set_meta('path', new_path)
 				item.set_tooltip(0, new_path)
-				emit_signal('folder_renamed', path, new_path)
+				emit_signal('rename_folder', path, new_path)
 		'node':
 			var id = item.get_meta('id')
 			item.set_tooltip(0, name)
-			emit_signal('card_renamed', id, name)
+			emit_signal('rename_node', id, name)
 
 # ******************************************************************************
 
@@ -259,7 +298,7 @@ func open_context_menu(position) -> void:
 
 	var item = get_item_at_position(position)
 
-	ctx = ContextMenu.new(self, 'context_menu_item_selected', item)
+	ctx = ContextMenu.new(self, 'context_menu_item_selected')
 	if item:
 		var type = item.get_meta('type')
 		match type:
@@ -284,7 +323,7 @@ func open_context_menu(position) -> void:
 		ctx.add_item('New Folder')
 	ctx.open(get_global_mouse_position())
 
-func context_menu_item_selected(selection: String, selected_item) -> void:
+func context_menu_item_selected(selection: String) -> void:
 	match selection:
 		'Convert to Yarn':
 			var item = get_selected()
@@ -294,7 +333,7 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 				Diagraph.save_yarn(path.replace('.json', '.yarn'), nodes)
 			Diagraph.refresh()
 		'New File':
-			var item = create_item(selected_item)
+			var item = create_item(get_selected())
 			item.set_text(0, 'new')
 			item.set_meta('name', 'new')
 			item.set_meta('type', 'file')
@@ -305,7 +344,7 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 			item.select(0)
 			call_deferred('edit_selected')
 		'New Folder':
-			var item = create_item(selected_item)
+			var item = create_item(get_selected())
 			item.set_text(0, 'new')
 			item.set_meta('name', 'new')
 			item.set_meta('type', 'folder')
@@ -321,7 +360,7 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 		'Rename':
 			_start_rename()
 		'Run':
-			emit_signal('card_run_requested')
+			emit_signal('run_node')
 		'Delete':
 			var item = get_selected()
 			var path = item.get_meta('path')
@@ -329,11 +368,11 @@ func context_menu_item_selected(selection: String, selected_item) -> void:
 
 			match type:
 				'file':
-					emit_signal('conversation_deleted', path)
+					emit_signal('delete_conversation', path)
 				'folder':
-					emit_signal('folder_deleted', path)
+					emit_signal('delete_folder', path)
 				'node':
-					emit_signal('card_deleted', item.get_meta('id'))
+					emit_signal('delete_node', item.get_meta('id'))
 
 			if is_instance_valid(item):
 				item.get_parent().remove_child(item)

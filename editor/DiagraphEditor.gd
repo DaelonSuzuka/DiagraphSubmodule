@@ -47,19 +47,18 @@ func _ready():
 	Refresh.connect('pressed', Diagraph, 'refresh')
 
 	Tree.connect('folder_collapsed', self, 'save_editor_data')
-	Tree.connect('folder_created', self, 'create_folder')
-	Tree.connect('folder_deleted', self, 'delete_folder')
-	Tree.connect('folder_renamed', self, 'rename_folder')
-	Tree.connect('conversation_changed', self, 'change_conversation')
-	Tree.connect('conversation_selected', self, 'conversation_selected')
-	Tree.connect('conversation_created', self, 'create_conversation')
-	Tree.connect('conversation_deleted', self, 'delete_conversation')
-	Tree.connect('conversation_renamed', self, 'rename_conversation')
-	Tree.connect('card_selected', GraphEdit, 'select_node')
-	Tree.connect('card_focused', self, 'focus_card')
-	Tree.connect('card_renamed', GraphEdit, 'rename_node')
-	Tree.connect('card_deleted', GraphEdit, 'delete_node')
-	Tree.connect('card_run_requested', self, 'run')
+	Tree.connect('create_folder', self, 'create_folder')
+	Tree.connect('delete_folder', self, 'delete_folder')
+	Tree.connect('rename_folder', self, 'rename_folder')
+	Tree.connect('change_conversation', self, 'change_conversation')
+	Tree.connect('create_conversation', self, 'create_conversation')
+	Tree.connect('delete_conversation', self, 'delete_conversation')
+	Tree.connect('rename_conversation', self, 'rename_conversation')
+	Tree.connect('select_node', GraphEdit, 'select_node')
+	Tree.connect('focus_node', self, 'focus_card')
+	Tree.connect('rename_node', GraphEdit, 'rename_node')
+	Tree.connect('delete_node', GraphEdit, 'delete_node')
+	Tree.connect('run_node', self, 'run')
 
 	DialogFontMinus.connect('pressed', self, 'dialog_font_minus')
 	DialogFontPlus.connect('pressed', self, 'dialog_font_plus')
@@ -154,6 +153,8 @@ func load_conversation(path):
 	else:
 		editor_data[name] = {}
 
+# ******************************************************************************
+
 func create_folder(path):
 	var dir = Directory.new()
 	dir.make_dir_recursive(path)
@@ -168,9 +169,15 @@ func rename_folder(old, new):
 	dir.rename(old, new)
 	Diagraph.refresh()
 
+# ------------------------------------------------------------------------------
+
 func create_conversation(path):
 	GraphEdit.clear()
 	current_conversation = path
+
+	var dir = Directory.new()
+	dir.make_dir_recursive(path.get_base_dir())
+
 	var file = File.new()
 	file.open(path, File.WRITE)
 	file.store_string('')
@@ -186,7 +193,7 @@ func sort(a, b):
 func delete_conversation(path):
 	delete_path = path
 	ConfirmDelete.dialog_text = 'Really delete conversation "' + path.get_file() + '" ?\n'
-	var nodes = Diagraph.load_conversation(path).values()
+	var nodes = Diagraph.load_conversation(path, {}).values()
 	nodes.sort_custom(self, 'sort')
 	var line_count = 0
 	for i in range(nodes.size()):
@@ -210,6 +217,7 @@ func delete_conversation(path):
 	ConfirmationDimmer.show()
 
 func really_delete_conversation():
+	print(delete_path)
 	if current_conversation == delete_path:
 		GraphEdit.clear()
 		current_conversation = ''
@@ -217,9 +225,12 @@ func really_delete_conversation():
 	save_editor_data()
 	var dir = Directory.new()
 	if delete_path.begins_with(Diagraph.prefix):
+		print('1')
 		dir.remove(delete_path)
 	if delete_path in Diagraph.conversations:
-		dir.remove(Diagraph.prefix + Diagraph.conversations[delete_path])
+		print('2')
+		print(Diagraph.conversations[delete_path])
+		dir.remove(Diagraph.conversations[delete_path])
 	Diagraph.refresh()
 
 func rename_conversation(old, new):
@@ -234,10 +245,6 @@ func rename_conversation(old, new):
 	dir.rename(old, new)
 	load_conversation(new)
 	Diagraph.refresh()
-
-func conversation_selected(path):
-	pass
-	# print('conversation_selected: ', path)
 
 func focus_card(path):
 	var _path = path.trim_prefix(Diagraph.conversation_prefix)
