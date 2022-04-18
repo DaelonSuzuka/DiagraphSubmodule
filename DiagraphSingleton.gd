@@ -25,12 +25,12 @@ func _ready():
 	call_deferred('refresh')
 
 	if OS.has_feature('HTML5'):
-		for file in get_files('res://' + conversation_path, '.json'):
+		for file in get_all_files('res://' + conversation_path, '.json'):
 			var from_path = 'res://' + conversation_path + file
 			var to_path = 'user://' + conversation_path + file
 			print('copying file', from_path)
 			save_json(to_path, load_json(from_path))
-		for file in get_files('res://' + conversation_path, '.yarn'):
+		for file in get_all_files('res://' + conversation_path, '.yarn'):
 			var from_path = 'res://' + conversation_path + file
 			var to_path = 'user://' + conversation_path + file
 			print('copying file', from_path)
