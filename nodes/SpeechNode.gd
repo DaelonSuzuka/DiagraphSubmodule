@@ -63,17 +63,28 @@ func get_data():
 	data['text'] = TextEdit.text
 	if data['show_choices']:
 		data['next'] = 'choice'
+	else:
+		data.erase('show_choices')
 
 	var connections = {}
 	for to in data.connections:
 		var num = str(data.connections[to][0] + 1)
 		connections[num] = to
+	
+	if !data.connections:
+		data.erase('connections')
 
+	data['choices'] = {}
 	for c in choices:
-		data['choices'][c.name[6]] = c.get_data()
-		data['choices'][c.name[6]]['next'] = ''
-		if c.name[6] in connections:
-			data['choices'][c.name[6]]['next'] = connections[c.name[6]]
+		var c_data = c.get_data()
+		if c_data:
+			data['choices'][c.name[6]] = c_data
+			data['choices'][c.name[6]]['next'] = ''
+			if c.name[6] in connections:
+				data['choices'][c.name[6]]['next'] = connections[c.name[6]]
+	if !data['choices']:
+		data.erase('choices')
+
 	return data
 
 func set_data(new_data):
@@ -88,7 +99,8 @@ func set_data(new_data):
 		Edit.get_popup().set_item_checked(0, state)
 	if 'choices' in new_data:
 		for c in choices:
-			c.set_data(new_data['choices'][c.name[6]])
+			if c.name[6] in new_data['choices']:
+				c.set_data(new_data['choices'][c.name[6]])
 
 	.set_data(new_data)
 

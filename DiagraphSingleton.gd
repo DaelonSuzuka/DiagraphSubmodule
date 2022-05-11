@@ -108,6 +108,11 @@ func load_characters():
 
 # ******************************************************************************
 
+func ensure_prefix(path):
+	if !path.begins_with(Diagraph.conversation_prefix):
+		path = Diagraph.conversation_prefix.plus_file(path)
+	return path
+
 func name_to_path(name):
 	return conversation_path + name
 

@@ -137,6 +137,8 @@ func get_data() -> Dictionary:
 	var _data = data.duplicate(true)
 	# _data.offset = var2str(offset)
 	# _data.rect_size = var2str(rect_size)
+	_data.erase('offset')
+	_data.erase('rect_size')
 	_data.position = var2str(Rect2(offset, rect_size))
 	_data.name = Title.text
 	return _data

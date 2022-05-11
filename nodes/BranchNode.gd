@@ -37,12 +37,20 @@ func get_data():
 	for to in data.connections:
 		var num = str(data.connections[to][0] + 1)
 		connections[num] = to
+	
+	if !data.connections:
+		data.erase('connections')
 
 	data['branches'] = {}
 	for b in branches:
-		data['branches'][b.name[6]] = b.get_data()
-		if b.name[6] in connections:
-			data['branches'][b.name[6]]['next'] = connections[b.name[6]]
+		var b_data = b.get_data()
+		if b_data:
+			data['branches'][b.name[6]] = b_data
+			if b.name[6] in connections:
+				data['branches'][b.name[6]]['next'] = connections[b.name[6]]
+	if !data['branches']:
+		data.erase('branches')
+
 	return data
 
 func set_data(new_data):

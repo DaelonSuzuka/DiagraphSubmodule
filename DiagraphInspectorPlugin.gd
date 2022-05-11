@@ -55,20 +55,11 @@ func select_conversation():
 	selector = ConfirmationDialog.new()
 	selector.window_title = 'Select a Conversation'
 
-	tree = Tree.new()
-	tree.hide_root = true
-	root = tree.create_item()
-	for name in Diagraph.conversations:
-		var item = tree.create_item(root)
-		item.set_text(0, name)
-
-		for node in Diagraph.load_conversation(name, {}).values():
-			var _item = tree.create_item(item)
-			_item.set_text(0, node.name)
-
+	tree = load('res://addons/diagraph/editor/Tree.gd').new()
 	tree.anchor_right = 1.0
 	tree.anchor_bottom = 1.0
 	selector.add_child(tree)
+	tree.refresh()
 
 	plugin.get_editor_interface().get_editor_viewport().add_child(selector)
 	selector.get_ok().connect('pressed', self, 'accepted')
@@ -76,14 +67,22 @@ func select_conversation():
 
 func accepted():
 	var item = tree.get_selected()
-	var parent = item.get_parent()
-	var path = ''
-	if parent == root:
-		selected_object.conversation = item.get_text(0)
-		selected_object.entry = ''
-	else:
-		selected_object.conversation = parent.get_text(0)
-		selected_object.entry = item.get_text(0)
+	var type = item.get_meta('type')
+	var path = item.get_meta('path')
+	path = path.trim_prefix(Diagraph.conversation_prefix)
+	match type:
+			'file':
+				selected_object.conversation = path
+				selected_object.entry = ''
+			'folder':
+				pass
+			'node':
+				var parts = path.split(':')
+				selected_object.conversation = parts[0]
+				selected_object.entry = parts[1]
+				var node = item.get_meta('node')
+				if node.name != node.type:
+					selected_object.entry = node.name
 
 	plugin.get_editor_interface().get_inspector().refresh()
 

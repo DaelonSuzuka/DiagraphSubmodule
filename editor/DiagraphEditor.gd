@@ -46,6 +46,7 @@ func _ready():
 
 	Refresh.connect('pressed', Diagraph, 'refresh')
 
+	Diagraph.connect('refreshed', Tree, 'refresh')
 	Tree.connect('folder_collapsed', self, 'save_editor_data')
 	Tree.connect('create_folder', self, 'create_folder')
 	Tree.connect('delete_folder', self, 'delete_folder')
@@ -234,6 +235,9 @@ func really_delete_conversation():
 	Diagraph.refresh()
 
 func rename_conversation(old, new):
+	old = Diagraph.ensure_prefix(old)
+	new = Diagraph.ensure_prefix(new)
+
 	if current_conversation == old:
 		GraphEdit.clear()
 		current_conversation = ''
@@ -241,7 +245,7 @@ func rename_conversation(old, new):
 		editor_data[new] = editor_data[old]
 		editor_data.erase(old)
 	save_editor_data()
-	var dir = Directory.new()
+	var dir := Directory.new()
 	dir.rename(old, new)
 	load_conversation(new)
 	Diagraph.refresh()

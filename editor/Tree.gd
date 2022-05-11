@@ -40,20 +40,26 @@ var icon_colors = {
 # ******************************************************************************
 
 func _ready():
-	Diagraph.connect('refreshed', self, 'refresh')
+	hide_root = true
+	allow_rmb_select = true
 
 	connect('item_selected', self, '_on_item_selected')
 	connect('gui_input', self, '_on_gui_input')
 	connect('item_edited', self, '_on_item_edited')
 	connect('item_activated', self, '_on_item_activated')
-	connect('item_collapsed', self, '_on_item_collapsed')
+
+	if !is_connected('item_collapsed', self, '_on_item_collapsed'):
+		connect('item_collapsed', self, '_on_item_collapsed')
 
 func refresh():
 	if root:
 		root.free()
 	root = create_item()
+	root.set_meta('path', '')
+	root.set_meta('type', 'folder')
 
-	disconnect('item_collapsed', self, '_on_item_collapsed')
+	if is_connected('item_collapsed', self, '_on_item_collapsed'):
+		disconnect('item_collapsed', self, '_on_item_collapsed')
 
 	var items := {}
 
@@ -100,27 +106,29 @@ func refresh():
 
 	for data in file_data:
 		var item = create_file_item(data.prev, data.path)
+		item.disable_folding = false
 
 		if data.path.get_file() == current_conversation:
-			item.set_icon_modulate(0, Color.white)
 			item.collapsed = false
-			item.disable_folding = false
+			item.set_icon_modulate(0, Color.white)
 
-			var nodes = Diagraph.load_conversation(data.path, {})
-			var node_names = []
-			var nodes_by_name = {}
+		var nodes = Diagraph.load_conversation(data.path, {})
 
-			for node in nodes.values():
-				nodes_by_name[node.name] = node
-				node_names.append(node.name + ':' + str(node.id))
+		var node_names = []
+		var nodes_by_name = {}
 
-			node_names.sort()
+		for node in nodes.values():
+			nodes_by_name[node.name] = node
+			node_names.append(node.name + ':' + str(node.id))
 
-			for node in node_names:
-				var id = node.split(':')[1]
-				create_node_item(item, data.file, nodes[id])
+		node_names.sort()
 
-	connect('item_collapsed', self, '_on_item_collapsed')
+		for node in node_names:
+			var id = node.split(':')[1]
+			create_node_item(item, data.file, nodes[id])
+
+	if !is_connected('item_collapsed', self, '_on_item_collapsed'):
+		connect('item_collapsed', self, '_on_item_collapsed')
 
 func create_file_item(parent, path):
 	var item = create_item(parent)
@@ -132,7 +140,7 @@ func create_file_item(parent, path):
 	item.set_icon_modulate(0, Color.silver)
 	item.set_tooltip(0, path)
 
-	item.disable_folding = true
+	# item.disable_folding = true
 	item.collapsed = true
 	return item
 
@@ -159,10 +167,10 @@ func create_folder_item(parent, path):
 
 	item.set_custom_color(0, Color.darkgray)
 	item.set_meta('type', 'folder')
-	item.set_meta('path', path)
+	item.set_meta('path', path.trim_prefix(Diagraph.conversation_prefix))
 	item.set_text(0, path.get_file())
 	item.set_meta('name', path.get_file())
-	item.set_tooltip(0, path)
+	item.set_tooltip(0, path.trim_prefix(Diagraph.conversation_prefix))
 	return item
 
 # ******************************************************************************
@@ -376,3 +384,47 @@ func context_menu_item_selected(selection: String) -> void:
 
 			if is_instance_valid(item):
 				item.get_parent().remove_child(item)
+
+# ******************************************************************************
+
+func get_drag_data(position):
+	set_drop_mode_flags(DROP_MODE_INBETWEEN | DROP_MODE_ON_ITEM)
+
+	var preview = Label.new()
+	preview.text = get_selected().get_text(0)
+	set_drag_preview(preview)
+
+	return get_selected()
+
+func can_drop_data(position, data) -> bool:
+	if !(data is TreeItem):
+		return false
+	var to_item = get_item_at_position(position)
+
+	var shift = get_drop_section_at_position(position)
+	if shift != 0:
+		to_item = to_item.get_parent()
+
+	if to_item:
+		var type = to_item.get_meta('type')
+		if type != 'folder':
+			return false
+	return true
+
+func drop_data(position, item):
+	var to_item = get_item_at_position(position)
+
+	var shift = get_drop_section_at_position(position)
+	if shift != 0:
+		to_item = to_item.get_parent()
+
+	var to_path = ''
+	if to_item:
+		to_path = to_item.get_meta('path')
+
+	var type = item.get_meta('type')
+	if type in ['file', 'folder']:
+		var path = item.get_meta('path')
+		var new_path = to_path.plus_file(path.get_file())
+
+		emit_signal('rename_conversation', path, new_path)

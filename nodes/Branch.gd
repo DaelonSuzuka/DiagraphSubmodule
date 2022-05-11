@@ -3,12 +3,15 @@ extends HBoxContainer
 
 # ******************************************************************************
 
+onready var Condition = $Condition
+
+# ******************************************************************************
+
 func get_data():
-	var data = {
-		condition = $Condition.text,
-		next = '',
-	}
+	var data = {}
+	if Condition.text:
+		data.condition = Condition.text
 	return data
 
 func set_data(data):
-	$Condition.text = data.condition
+	Condition.text = data.get('condition', '')

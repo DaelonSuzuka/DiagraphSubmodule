@@ -316,8 +316,8 @@ func do_zoom_scroll(step: int) -> void:
 
 func set_nodes(data: Dictionary) -> void:
 	notify_changes = false
-	for id in data:
-		create_node(data[id])
+	for node_data in data.values():
+		create_node(node_data)
 	for node in nodes.values():
 		node.update()
 		for to in node.data.connections:
