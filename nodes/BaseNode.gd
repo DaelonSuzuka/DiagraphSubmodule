@@ -11,9 +11,8 @@ var data := {
 	name = '',
 	text = '',
 	next = 'none',
-	rect_size = '',
+	default = false,
 	position = '',
-	offset = '',
 	connections = {}
 }
 
@@ -87,6 +86,8 @@ func body_ctx_selection(selection: String):
 func title_bar_ctx(pos: Vector2) -> void:
 	Parent.dismiss_ctx()
 	Parent.ctx = ContextMenu.new(self, '_title_bar_ctx_selection')
+	Parent.ctx.add_check_item('Default')
+	Parent.ctx.set_item_checked(0, bool(data.default))
 	Parent.ctx.add_item('Copy Path')
 	for item in self.get_title_bar_ctx_items():
 		Parent.ctx.add_item(item)
@@ -94,9 +95,16 @@ func title_bar_ctx(pos: Vector2) -> void:
 	accept_event()
 
 func _title_bar_ctx_selection(selection: String):
-	if selection == 'Copy Path':
-		var path = '%s:%s' % [Parent.owner.current_conversation, data.name]
-		OS.clipboard = path
+	match selection:
+		'Default':
+			data.default = !data.default
+			if data.default:
+				for node in Parent.nodes.values():
+					node.data.default = false
+				data.default = true
+		'Copy Path':
+			var path = '%s:%s' % [Parent.owner.current_conversation, data.name]
+			OS.clipboard = path
 
 	self.title_bar_ctx_selection(selection)
 
@@ -135,12 +143,12 @@ func renamed(new_name):
 
 func get_data() -> Dictionary:
 	var _data = data.duplicate(true)
-	# _data.offset = var2str(offset)
-	# _data.rect_size = var2str(rect_size)
-	_data.erase('offset')
-	_data.erase('rect_size')
 	_data.position = var2str(Rect2(offset, rect_size))
 	_data.name = Title.text
+	if _data.next == 'none':
+		_data.erase('next')
+	if _data.default == false:
+		_data.erase('default')
 	return _data
 
 func set_data(new_data: Dictionary) -> GraphNode:
@@ -151,6 +159,13 @@ func set_data(new_data: Dictionary) -> GraphNode:
 			data.connections[con] = []
 			data.connections[con].append(int(new_data.connections[con][0]))
 			data.connections[con].append(int(new_data.connections[con][1]))
+	if 'default' in new_data:
+		var state = new_data['default']
+		if state is String:
+			state = {'True': true, 'False': false}[state]
+		data.default = state
+	if 'next' in new_data:
+		data.next = new_data.next
 	if 'id' in new_data:
 		set_id(new_data.id)
 	if 'name' in new_data:

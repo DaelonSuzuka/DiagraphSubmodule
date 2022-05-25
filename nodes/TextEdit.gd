@@ -122,8 +122,33 @@ func copy_line(direction):
 
 	sel.from_line += direction * target_lines.size()
 	sel.to_line += direction * target_lines.size()
-	sel.cur_line += direction * target_lines.size()
+	sel.cur_line += direction * target_lines.size() if direction == 1 else 0
 
+	set_selection(sel)
+
+func toggle_comment():
+	var sel = get_selection()
+	var lines = Array(text.split('\n'))
+
+	var target_lines = []
+	if is_selection_active():
+		for i in range(sel.from_line, sel.to_line + 1):
+			target_lines.append(i)
+	else:
+		target_lines.append(sel.cur_line)
+
+	var comment = true
+	if lines[target_lines[0]].lstrip(' \t').begins_with('#'):
+		comment = false
+
+	for line in target_lines:
+		if comment:
+			lines[line] = '# ' + lines[line]
+		else:
+			lines[line] = lines[line].trim_prefix('# ').trim_prefix('#')
+			lines[line] = lines[line].trim_prefix('// ').trim_prefix('//')
+	
+	text = PoolStringArray(lines).join('\n')
 	set_selection(sel)
 
 func _input(event):
@@ -132,20 +157,25 @@ func _input(event):
 	if !(event is InputEventKey) or !event.pressed:
 		return
 
-	if event.scancode == KEY_UP and event.alt and event.shift:
+	if event.as_text() == 'Shift+Alt+Up':
 		copy_line(-1)
 		accept_event()
 		return
-	if event.scancode == KEY_DOWN and event.alt and event.shift:
+	if event.as_text() == 'Shift+Alt+Down':
 		copy_line(1)
 		accept_event()
 		return
-	if event.scancode == KEY_UP and event.alt:
+	if event.as_text() == 'Alt+Up':
 		move_line(-1)
 		accept_event()
 		return
-	if event.scancode == KEY_DOWN and event.alt:
+	if event.as_text() == 'Alt+Down':
 		move_line(1)
+		accept_event()
+		return
+
+	if event.as_text() == 'Control+Q':
+		toggle_comment()
 		accept_event()
 		return
 

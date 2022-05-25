@@ -157,17 +157,17 @@ func load_conversation(path):
 # ******************************************************************************
 
 func create_folder(path):
-	var dir = Directory.new()
+	var dir := Directory.new()
 	dir.make_dir_recursive(path)
 
 func delete_folder(path):
-	var dir = Directory.new()
-	dir.remove(path)
+	var dir := Directory.new()
+	dir.remove(Diagraph.ensure_prefix(path))
 	Diagraph.refresh()
 
 func rename_folder(old, new):
-	var dir = Directory.new()
-	dir.rename(old, new)
+	var dir := Directory.new()
+	dir.rename(Diagraph.ensure_prefix(old), Diagraph.ensure_prefix(new))
 	Diagraph.refresh()
 
 # ------------------------------------------------------------------------------
@@ -218,7 +218,6 @@ func delete_conversation(path):
 	ConfirmationDimmer.show()
 
 func really_delete_conversation():
-	print(delete_path)
 	if current_conversation == delete_path:
 		GraphEdit.clear()
 		current_conversation = ''
@@ -226,11 +225,8 @@ func really_delete_conversation():
 	save_editor_data()
 	var dir = Directory.new()
 	if delete_path.begins_with(Diagraph.prefix):
-		print('1')
 		dir.remove(delete_path)
 	if delete_path in Diagraph.conversations:
-		print('2')
-		print(Diagraph.conversations[delete_path])
 		dir.remove(Diagraph.conversations[delete_path])
 	Diagraph.refresh()
 
@@ -291,20 +287,31 @@ func character_added(path):
 func run():
 	Diagraph.load_characters()
 	var selection = GraphEdit.get_selected_nodes()
+
+	var conversation = current_conversation
+	var entry = ''
 	if selection.size() == 1:
 		var node = selection[0]
-		save_conversation()
-		save_editor_data()
-		$Preview.show()
+		entry = node.name
+	else:
+		for node in GraphEdit.nodes.values():
+			if node.data.default:
+				entry = node.name
 
-		if DialogBox:
-			Preview.remove_child(DialogBox)
-			DialogBox.queue_free()
-			DialogBox = null
-		DialogBox = load('res://addons/diagraph/dialog_box/DialogBox.tscn').instance()
-		Preview.add_child(DialogBox)
-		DialogBox.connect('done', self, 'stop')
-		DialogBox.start(current_conversation + ':' + node.name)
+	if entry:
+		conversation += ':' + entry
+	save_conversation()
+	save_editor_data()
+	$Preview.show()
+
+	if DialogBox:
+		Preview.remove_child(DialogBox)
+		DialogBox.queue_free()
+		DialogBox = null
+	DialogBox = load('res://addons/diagraph/dialog_box/DialogBox.tscn').instance()
+	Preview.add_child(DialogBox)
+	DialogBox.connect('done', self, 'stop')
+	DialogBox.start(conversation, {exec = false})
 
 func stop():
 	$Preview.hide()

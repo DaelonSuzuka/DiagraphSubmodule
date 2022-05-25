@@ -5,16 +5,21 @@ extends Node
 
 var prefix := 'user://' if OS.has_feature('HTML5') else 'res://'
 
-var characters_path = 'characters/'
-var character_map_path = characters_path + 'other_characters.json'
-var characters := {}
+var characters_path := 'characters/'
+var characters_prefix := prefix + characters_path
+var character_map_path := characters_path + 'other_characters.json'
+
+var conversation_path := 'conversations/'
+var conversation_prefix := prefix + conversation_path
 
 var sandbox = load('res://addons/diagraph/Sandbox.gd').new()
 
-var conversation_path := 'conversations/'
+var characters := {}
 var conversations := {}
-
-var conversation_prefix := prefix + conversation_path
+var _conversations := {}
+var conversations_by_filename := {}
+var conversations_by_basename := {}
+var conversations_by_basefilename := {}
 
 signal refreshed
 
@@ -39,53 +44,22 @@ func refresh():
 
 func load_conversations():
 	conversations.clear()
-	var json_conversations = get_all_files(prefix + conversation_path, '.json')
-	for convo in json_conversations:
+	var convos = get_all_files(conversation_prefix, ['.yarn', '.json'])
+	for convo in convos:
 		conversations[path_to_name(convo)] = convo
-	var yarn_conversations = get_all_files(prefix + conversation_path, '.yarn')
-	for convo in yarn_conversations:
-		conversations[path_to_name(convo)] = convo
+		_conversations[path_to_name(convo)] = convo
 
-func load_conversation(path, default=null):
-	var result = default
+		var filename = path_to_name(convo).get_file()
+		if !(filename in _conversations):
+			_conversations[filename] = convo
 
-	# handle complete path
-	if path.begins_with(prefix):
-		if path.ends_with('.json'):
-			result = load_json(path, default)
-		if path.ends_with('.yarn'):
-			result = load_yarn(path, default)
-		return result
+		var basename = path_to_name(convo).get_basename()
+		if !(basename in _conversations):
+			_conversations[basename] = convo
 
-	if !(path in conversations):
-		return result
-
-	# handle shorthand convo path
-	if conversations[path].ends_with('.json'):
-		result = load_json(conversations[path], default)
-	if conversations[path].ends_with('.yarn'):
-		result = load_yarn(conversations[path], default)
-	return result
-
-func save_conversation(path, data):
-	if !data:
-		# print("can't save empty data")
-		return
-	if path.begins_with(prefix):
-		if path.ends_with('.json'):
-			save_json(path, data)
-		if path.ends_with('.yarn'):
-			save_yarn(path, data)
-		return
-	if path in conversations:
-		if conversations[path].ends_with('.json'):
-			save_json(conversations[path], data)
-			# var path = conversations[path].replace('.json', '.yarn')
-			# save_yarn(path, data)
-		if conversations[path].ends_with('.yarn'):
-			save_yarn(conversations[path], data)
-	else:
-		save_yarn(prefix + conversation_path + path + '.yarn', data)
+		var basefilename = path_to_name(convo).get_file().get_basename()
+		if !(basefilename in _conversations):
+			_conversations[basefilename] = convo
 
 func load_characters():
 	characters.clear()
@@ -108,90 +82,157 @@ func load_characters():
 
 # ******************************************************************************
 
+var loaders = {
+	'yarn': 'load_yarn',
+	'json': 'load_json',
+}
+
+func _load_conversation(path, default=null):
+	var result = default
+
+	if path.get_extension() in loaders:
+		result = call('load_' + path.get_extension(), path, default)
+
+	return result
+
+# ------------------------------------------------------------------------------
+
+func load_conversation(path, default=null):
+	# sanitize path by removing node name and/or line number
+	var has_prefix = path.begins_with(Diagraph.prefix)
+	path = path.trim_prefix(Diagraph.prefix)
+	path = path.split(':')[0]
+	if has_prefix:
+		path = Diagraph.ensure_prefix(path)
+
+	if path in _conversations:
+		path = _conversations[path]
+
+	return _load_conversation(path, default)
+
+func save_conversation(path, data):
+	if !data:
+		# print("can't save empty data")
+		return
+	if path.begins_with(prefix):
+		if path.ends_with('.json'):
+			save_json(path, data)
+		if path.ends_with('.yarn'):
+			save_yarn(path, data)
+		return
+	if path in conversations:
+		if conversations[path].ends_with('.json'):
+			save_json(conversations[path], data)
+			# var path = conversations[path].replace('.json', '.yarn')
+			# save_yarn(path, data)
+		if conversations[path].ends_with('.yarn'):
+			save_yarn(conversations[path], data)
+	else:
+		save_yarn(conversation_prefix + path + '.yarn', data)
+
+# ******************************************************************************
+
 func ensure_prefix(path):
-	if !path.begins_with(Diagraph.conversation_prefix):
-		path = Diagraph.conversation_prefix.plus_file(path)
+	if path.begins_with(prefix):
+		return path
+
+	if path.begins_with(conversation_path):
+		path = prefix.plus_file(path)
+	else:
+		path = conversation_prefix.plus_file(path)
+
 	return path
 
-func name_to_path(name):
-	return conversation_path + name
-
 func path_to_name(path):
-	return path.trim_prefix(prefix + conversation_path)
+	return path.trim_prefix(conversation_prefix)
 
 func validate_paths():
 	var dir = Directory.new()
-	if !dir.dir_exists(prefix + characters_path):
+	if !dir.dir_exists(characters_prefix):
 		dir.make_dir_recursive(prefix + characters_path)
-	if !dir.dir_exists(prefix + conversation_path):
-		dir.make_dir_recursive(prefix + conversation_path)
+	if !dir.dir_exists(conversation_prefix):
+		dir.make_dir_recursive(conversation_prefix)
 
-func get_files(path, ext='') -> Array:
-	var files = []
+# ******************************************************************************
+
+func check_extension(file, ext=null) -> bool:
+	if ext:
+		if ext is String:
+			if file.ends_with(ext):
+				return true
+		elif ext is Array:
+			for e in ext:
+				if file.ends_with(e):
+					return true
+	return false
+
+# get all files in given directory with optional extension filter
+func get_files(path: String, ext='') -> Array:
+	var _files = []
 	var dir = Directory.new()
 	dir.open(path)
-	dir.list_dir_begin()
+	dir.list_dir_begin(true, true)
 
+	var file = dir.get_next()
 	while true:
-		var file = dir.get_next()
+		var file_path = dir.get_current_dir().plus_file(file)
 		if file == '':
 			break
-		elif not file.begins_with('.'):
-			if ext:
-				if file.ends_with(ext):
-					files.append(file)
-			else:
-				files.append(file)
-	dir.list_dir_end()
-	return files
+		if ext:
+			if check_extension(file, ext):
+				_files.append(file_path)
+		else:
+			_files.append(file_path)
+		file = dir.get_next()
 
-func get_all_files(path: String, ext:='', max_depth:=10, depth:=0, files:=[]) -> Array:
-	if depth >= max_depth:
+	dir.list_dir_end()
+
+	return _files
+
+# get all files in given directory(and subdirectories, to a given depth) with optional extension filter
+func get_all_files(path: String, ext='', max_depth:=10, _depth:=0, _files:=[]) -> Array:
+	if _depth >= max_depth:
 		return []
 
 	var dir = Directory.new()
 	dir.open(path)
-
 	dir.list_dir_begin(true, true)
 
 	var file = dir.get_next()
 	while file != '':
 		var file_path = dir.get_current_dir().plus_file(file)
 		if dir.current_is_dir():
-			get_all_files(file_path, ext, max_depth, depth + 1, files)
+			get_all_files(file_path, ext, max_depth, _depth + 1, _files)
 		else:
 			if ext:
-				if file.ends_with(ext):
-					files.append(file_path)
+				if check_extension(file, ext):
+					_files.append(file_path)
 			else:
-				files.append(file_path)
+				_files.append(file_path)
 		file = dir.get_next()
 	dir.list_dir_end()
-	return files
+	return _files
 
-func get_all_files_and_folders(path: String, ext:='', max_depth:=10, depth:=0, files:=[]) -> Array:
-	if depth >= max_depth:
+# get all files AND folders in a given directory(and subdirectories, to a given depth)
+func get_all_files_and_folders(path: String, max_depth:=10, _depth:=0, _files:=[]) -> Array:
+	if _depth >= max_depth:
 		return []
 
 	var dir = Directory.new()
 	dir.open(path)
-
 	dir.list_dir_begin(true, true)
 
 	var file = dir.get_next()
 	while file != '':
 		var file_path = dir.get_current_dir().plus_file(file)
 		if dir.current_is_dir():
-			files.append(file_path)
-			get_all_files_and_folders(file_path, ext, max_depth, depth + 1, files)
+			_files.append(file_path)
+			get_all_files_and_folders(file_path, max_depth, _depth + 1, _files)
 		else:
-			if ext and file.ends_with(ext):
-				files.append(file_path)
-			else:
-				files.append(file_path)
+			_files.append(file_path)
 		file = dir.get_next()
 	dir.list_dir_end()
-	return files
+	return _files
 
 # ******************************************************************************
 
@@ -199,7 +240,7 @@ func save_json(path, data):
 	if !data:
 		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
-		path = prefix + path
+		path = Diagraph.prefix + path
 
 	var dir = Directory.new()
 	dir.make_dir_recursive(path.get_base_dir())
@@ -211,7 +252,7 @@ func save_json(path, data):
 
 func load_json(path, default=null):
 	if !path.begins_with('res://') and !path.begins_with('user://'):
-		path = prefix + path
+		path = Diagraph.prefix + path
 	var result = default
 	var f = File.new()
 	if f.file_exists(path):
@@ -229,7 +270,7 @@ func save_yarn(path, data):
 	if !data:
 		return
 	if !path.begins_with('res://') and !path.begins_with('user://'):
-		path = prefix + path
+		path = Diagraph.prefix + path
 
 	var dir = Directory.new()
 	dir.make_dir_recursive(path.get_base_dir())

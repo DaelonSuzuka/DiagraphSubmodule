@@ -77,7 +77,6 @@ text = "Branch"
 [node name="Edit" parent="Body/Toolbar" index="2"]
 margin_left = 201.0
 margin_right = 217.0
-items = [ "Entry", null, 1, false, false, 0, 0, null, "", false ]
 
 [node name="Close" parent="Body/Toolbar" index="3"]
 margin_left = 224.0

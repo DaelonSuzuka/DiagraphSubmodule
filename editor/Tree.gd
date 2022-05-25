@@ -51,7 +51,18 @@ func _ready():
 	if !is_connected('item_collapsed', self, '_on_item_collapsed'):
 		connect('item_collapsed', self, '_on_item_collapsed')
 
+var refresh_countdown = 0
+
 func refresh():
+	refresh_countdown = 10
+
+func _physics_process(delta):
+	if refresh_countdown:
+		refresh_countdown -= 1
+		if refresh_countdown == 0:
+			_refresh()
+
+func _refresh():
 	if root:
 		root.free()
 	root = create_item()
@@ -160,10 +171,11 @@ func create_node_item(parent, path, node):
 func create_folder_item(parent, path):
 	var item = create_item(parent)
 
-	if path in folder_state:
-		item.collapsed = folder_state[path].collapsed
+	var p = path.trim_prefix(Diagraph.conversation_prefix)
+	if p in folder_state:
+		item.collapsed = folder_state[p].collapsed
 	else:
-		folder_state[path] = {'collapsed': false}
+		folder_state[p] = {'collapsed': false}
 
 	item.set_custom_color(0, Color.darkgray)
 	item.set_meta('type', 'folder')
@@ -331,14 +343,21 @@ func open_context_menu(position) -> void:
 		ctx.add_item('New Folder')
 	ctx.open(get_global_mouse_position())
 
+var ge = null
+
 func context_menu_item_selected(selection: String) -> void:
 	match selection:
 		'Convert to Yarn':
 			var item = get_selected()
 			var path = item.get_meta('path')
 			var nodes = Diagraph.load_conversation(path)
+			if !ge:
+				ge = load('res://addons/diagraph/editor/GraphEdit.gd').new()
+				add_child(ge)
+			ge.set_nodes(nodes)
+			nodes = ge.get_nodes()
 			if nodes:
-				Diagraph.save_yarn(path.replace('.json', '.yarn'), nodes)
+				Diagraph.save_yarn(Diagraph.conversation_prefix + path.replace('.json', '.yarn'), nodes)
 			Diagraph.refresh()
 		'New File':
 			var item = create_item(get_selected())

@@ -118,19 +118,22 @@ func split_text(text):
 
 # ******************************************************************************
 
-var nodes = {}
+var nodes := {}
 var current_node = 0
-var current_line = 0
-var current_data = null
-var caller = null
-var line_count = 0
-var length = -1
-var popup = false
-var popup_timeout = 1.0
+var current_line := 0
+var current_data := {}
+var caller: Node = null
+var line_count := 0
+var length := -1
+var popup := false
+var popup_timeout := 1.0
+var exec := true
+var show_name := true
+var show_portrait := true
+var speed := 1.0
 
 func start(conversation, options={}):
 	# reset stuff
-	var name = ''
 	var entry = ''
 	var line_number = 0
 	active = true
@@ -140,17 +143,15 @@ func start(conversation, options={}):
 	remove_options()
 
 	# parse conversation string
-	if conversation.begins_with(Diagraph.prefix):
-		name = conversation
-	else:
-		var parts = conversation.split(':')
-		name = Diagraph.conversations[parts[0]]
-		if parts.size() >= 2:
-			entry = parts[1]
-		if parts.size() >= 3:
-			line_number = int(parts[2])
+	conversation = conversation.trim_prefix(Diagraph.prefix)
 
-	nodes = Diagraph.load_conversation(name, {})
+	var parts = conversation.split(':')
+	if parts.size() >= 2:
+		entry = parts[1]
+	if parts.size() >= 3:
+		line_number = int(parts[2])
+
+	nodes = Diagraph.load_conversation(conversation, {}) as Dictionary
 
 	# identify starting node
 	current_node = null
@@ -162,6 +163,9 @@ func start(conversation, options={}):
 			current_node = entry
 	else:
 		current_node = nodes.keys()[0]
+		for node in nodes.values():
+			if node.get('default', false):
+				current_node = str(node.id)
 
 	# set up initial data
 	current_data = nodes[current_node]
@@ -175,6 +179,8 @@ func start(conversation, options={}):
 	# parse options
 	if 'caller' in options:
 		caller = options.caller
+
+	apply_directive(options)
 
 	if 'popup' in options:
 		popup = true
@@ -221,14 +227,14 @@ func check_next_line(line_number):
 		if current_data.next == 'choice':
 			display_choices()
 		return
-	
+
 	var new_line = current_data.text[line_number]
 
 	var skip := false
 	if new_line.length() == 0 or new_line.begins_with('#') or new_line.begins_with('//'):
 		check_next_line(line_number + 1)
 		return
-	
+
 	var marker = null
 	if new_line.begins_with('->'):
 		marker = '->'
@@ -275,10 +281,44 @@ func next_line():
 	var new_line = current_data.text[current_line]
 
 	# check for line skip
-	# TODO: check for lines that only contain a code block
-	# TODO: skip lines that are only whitespace
 	var skip := false
 	if new_line.length() == 0 or new_line.begins_with('#') or new_line.begins_with('//'):
+		skip = true
+
+	var skip2 = true
+	if !skip:
+		cursor = 0
+		line = new_line
+		while cursor < line.length():
+			if line[cursor] == '{':
+				if line[cursor + 1] == '{':
+					var block = get_block('{{', '}}', ['erase'])
+					if block:
+						# if exec:
+						# 	var result = evaluate(block)
+						# 	line = line.insert(cursor, str(result))
+						skip2 = false
+						break
+				else:
+					var block = get_block('{', '}')
+					if block:
+						if exec:
+							var result = evaluate(block)
+			elif line[cursor] == '<':
+				if line[cursor + 1] == '<':
+					var block = get_block('<<', '>>')
+					if block:
+						var cmd = decode_yarn(block)
+						if 'jump' in cmd:
+							jump_to(cmd.jump)
+							return
+						apply_directive(cmd)
+							
+			elif !(line[cursor] in [' ', '\t']):
+				skip2 = false
+			cursor += 1
+		
+	if skip2:
 		skip = true
 
 	var marker = null
@@ -333,14 +373,14 @@ func next_line():
 	for child in Portrait.get_children():
 		child.hide()
 		if child.name == name:
-			if !popup:
+			if show_portrait and !popup:
 				child.show()
 			character_idle()
 
 	NameOutline.modulate = color
 	TextBoxOutline.modulate = color
 	Name.text = name
-	Name.visible = (name != '') if !popup else false
+	Name.visible = (name != '') if show_name and !popup else false
 	set_line(new_line)
 
 	line_count += 1
@@ -465,27 +505,35 @@ func next_char(use_timer=true):
 	var next_char = ''
 	if cursor + 1 < line.length() - 1:
 		next_char = line[cursor + 1]
-	var cooldown = next_char_cooldown
+	var cooldown = next_char_cooldown / speed
 
 	match this_char:
 		'{':  # detect commands
 			if next_char == '{':
-				var cmd = get_block('{{', '}}', ['erase'])
-				if cmd:
-					var result = evaluate(cmd)
-					line = line.insert(cursor, str(result))
+				var block = get_block('{{', '}}', ['erase'])
+				if block:
+					if exec:
+						var result = evaluate(block)
+						line = line.insert(cursor, str(result))
 					next_char()
 			else:
-				var cmd = get_block('{', '}')
-				if cmd:
-					var result = evaluate(cmd)
+				var block = get_block('{', '}')
+				if block:
+					if exec:
+						var result = evaluate(block)
+					cursor += 1
 					next_char()
 		'<':
 			if next_char == '<':
-				var cmd = get_block('<<', '>>')
-				if cmd:
-					if cmd.begins_with('jump '):
-						jump_to(cmd.trim_prefix('jump '))
+				var block = get_block('<<', '>>')
+				if block:
+					var cmd = decode_yarn(block)
+					if 'jump' in cmd:
+						jump_to(cmd.jump)
+						cursor = line.length()
+						next_char()
+						return
+					if apply_directive(cmd):
 						cursor = line.length()
 						next_char()
 						return
@@ -527,10 +575,59 @@ func print_char(c):
 	emit_signal('character_added', c)
 
 # ******************************************************************************
+# directive stuff
 
-func process_yarn(command):
-	if command.begins_with('jump '):
-		jump_to(command.trim_prefix('jump '))
+var bool_directive = {
+	'on': true,
+	'off': false,
+	'true': true,
+	'false': false,
+	'1': true,
+	'0': false,
+}
+
+func parse_bool(value, default):
+	if value in bool_directive:
+		return bool_directive[value]
+	return default
+
+func decode_yarn(block):
+	var parts = block.split(' ')
+	var result = {}
+	match parts[0]:
+		'jump':
+			result['jump'] = parts[1]
+		'speed':
+			result['speed'] = float(parts[1])
+		'exec':
+			result['exec'] = parse_bool(parts[1], exec)
+		'name':
+			result['name'] = parse_bool(parts[1], show_name)
+		'portrait':
+			result['portrait'] = parse_bool(parts[1], show_portrait)
+	return result
+
+func apply_directive(dir):
+	var result = false
+	# if 'jump' in dir:
+	# 	exec = dir.jump
+	# 	result = true
+	# if 'wait' in dir:
+	# 	exec = dir.jump
+	# 	result = true
+	if 'exec' in dir:
+		exec = dir.exec
+		result = true
+	if 'name' in dir:
+		show_name = dir.name
+		result = true
+	if 'portrait' in dir:
+		show_portrait = dir.portrait
+		result = true
+	if 'speed' in dir:
+		speed = dir.speed
+		result = true
+	return result
 
 # ******************************************************************************
 
