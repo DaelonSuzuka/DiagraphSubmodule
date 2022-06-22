@@ -3,11 +3,12 @@ extends Control
 
 # ******************************************************************************
 
-var OptionButton = preload('res://addons/diagraph/dialog_box/OptionButton.tscn')
-var option_button = null
+export(String, FILE, '*.tscn,*.scn') var option_button_path = 'res://addons/diagraph/dialog_box/OptionButton.tscn'
 
-var TextTimer := Timer.new()
-var DismissTimer := Timer.new()
+onready var OptionButton = load(option_button_path)
+
+var TextTimer: Timer = null
+var DismissTimer: Timer = null
 var original_cooldown := 0.05
 var next_char_cooldown := original_cooldown
 
@@ -16,6 +17,7 @@ signal line_finished
 signal character_added(c)
 
 onready var Name = find_node('Name')
+onready var Next = find_node('Next')
 onready var NameOutline = find_node('NameOutline')
 onready var TextBox = find_node('TextBox')
 onready var TextBoxOutline = find_node('TextBoxOutline')
@@ -30,17 +32,14 @@ var direct_input := true
 # ******************************************************************************
 
 func _ready():
+	TextTimer = Timer.new()
 	add_child(TextTimer)
 	TextTimer.connect('timeout', self, 'next_char')
 	TextTimer.one_shot = true
+	DismissTimer = Timer.new()
 	add_child(DismissTimer)
 	DismissTimer.connect('timeout', self, 'next_line')
 	DismissTimer.one_shot = true
-
-	var opt_btn = get_node_or_null('OptionButton')
-	if opt_btn:
-		remove_child(opt_btn)
-		option_button = opt_btn
 
 # input handling shim
 func _input(event):
@@ -58,11 +57,7 @@ func handle_input(event):
 # ******************************************************************************
 
 func add_option(option, value=null):
-	var button
-	if option_button:
-		button = option_button.duplicate()
-	else:
-		button = OptionButton.instance()
+	var button = OptionButton.instance()
 
 	var arg = value if value else option
 	button.connect('pressed', self, 'option_selected', [arg])
@@ -92,7 +87,7 @@ func character_idle():
 # utils
 
 func strip_name(text):
-	return text.split(':')[1].trim_prefix(':').trim_prefix(' ')
+	return text.split(':', true, 1)[1].trim_prefix(':').trim_prefix(' ')
 
 func split_text(text):
 	var parts = text.split('\n')
@@ -129,6 +124,7 @@ var popup := false
 var popup_timeout := 1.0
 var exec := true
 var show_name := true
+var name_override = null
 var show_portrait := true
 var speed := 1.0
 
@@ -136,8 +132,10 @@ func start(conversation, options={}):
 	# reset stuff
 	var entry = ''
 	var line_number = 0
+	name_override = null
 	active = true
 	caller = null
+	Next.visible = false
 	NameOutline.modulate = Color.white
 	TextBoxOutline.modulate = Color.white
 	remove_options()
@@ -313,11 +311,11 @@ func next_line():
 							jump_to(cmd.jump)
 							return
 						apply_directive(cmd)
-							
+
 			elif !(line[cursor] in [' ', '\t']):
 				skip2 = false
 			cursor += 1
-		
+
 	if skip2:
 		skip = true
 
@@ -379,7 +377,7 @@ func next_line():
 
 	NameOutline.modulate = color
 	TextBoxOutline.modulate = color
-	Name.text = name
+	Name.text = name if name_override == null else name_override
 	Name.visible = (name != '') if show_name and !popup else false
 	set_line(new_line)
 
@@ -431,7 +429,7 @@ func display_choices():
 	for c in current_data.choices:
 		if current_data.choices[c].choice:
 			var result = true
-			var condition = current_data.choices[c].condition
+			var condition = current_data.choices[c].get('condition')
 			if condition:
 				result = evaluate(condition)
 			var option = add_option(current_data.choices[c].choice, c)
@@ -466,6 +464,7 @@ func set_line(_line):
 	cursor = 0
 	TextBox.bbcode_text = ''
 	DebugLog.text = ''
+	Next.visible = false
 	next_char_cooldown = original_cooldown
 	TextTimer.start(next_char_cooldown)
 
@@ -498,6 +497,7 @@ func next_char(use_timer=true):
 		character_idle()
 		TextTimer.stop()
 		line_active = false
+		Next.visible = true
 		check_next_line(current_line)
 		return
 
@@ -592,7 +592,7 @@ func parse_bool(value, default):
 	return default
 
 func decode_yarn(block):
-	var parts = block.split(' ')
+	var parts = block.split(' ', true, 1)
 	var result = {}
 	match parts[0]:
 		'jump':
@@ -603,6 +603,8 @@ func decode_yarn(block):
 			result['exec'] = parse_bool(parts[1], exec)
 		'name':
 			result['name'] = parse_bool(parts[1], show_name)
+		'set_name':
+			result['set_name'] = parts[1]
 		'portrait':
 			result['portrait'] = parse_bool(parts[1], show_portrait)
 	return result
@@ -620,6 +622,9 @@ func apply_directive(dir):
 		result = true
 	if 'name' in dir:
 		show_name = dir.name
+		result = true
+	if 'set_name' in dir:
+		name_override = dir.set_name
 		result = true
 	if 'portrait' in dir:
 		show_portrait = dir.portrait

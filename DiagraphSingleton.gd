@@ -13,13 +13,11 @@ var conversation_path := 'conversations/'
 var conversation_prefix := prefix + conversation_path
 
 var sandbox = load('res://addons/diagraph/Sandbox.gd').new()
+var watcher = load('res://addons/diagraph/Watcher.gd').new()
 
 var characters := {}
 var conversations := {}
 var _conversations := {}
-var conversations_by_filename := {}
-var conversations_by_basename := {}
-var conversations_by_basefilename := {}
 
 signal refreshed
 
@@ -28,6 +26,12 @@ signal refreshed
 func _ready():
 	validate_paths()
 	call_deferred('refresh')
+
+	add_child(sandbox)
+	add_child(watcher)
+
+	watcher.add_scan_directory(characters_prefix)
+	watcher.add_scan_directory(conversation_prefix)
 
 	if OS.has_feature('HTML5'):
 		for file in get_all_files('res://' + conversation_path, '.json'):
@@ -66,6 +70,8 @@ func load_characters():
 	for file in get_all_files('res://' + characters_path, '.tscn'):
 		var c = load(file).instance()
 		characters[c.name] = c
+		add_child(c)
+		c.hide()
 
 	# for folder in get_files('res://' + characters_path):
 	# 	for file in get_files('res://' + characters_path + folder, '.tscn'):
@@ -225,11 +231,9 @@ func get_all_files_and_folders(path: String, max_depth:=10, _depth:=0, _files:=[
 	var file = dir.get_next()
 	while file != '':
 		var file_path = dir.get_current_dir().plus_file(file)
+		_files.append(file_path)
 		if dir.current_is_dir():
-			_files.append(file_path)
 			get_all_files_and_folders(file_path, max_depth, _depth + 1, _files)
-		else:
-			_files.append(file_path)
 		file = dir.get_next()
 	dir.list_dir_end()
 	return _files

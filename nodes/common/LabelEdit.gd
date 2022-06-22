@@ -20,7 +20,7 @@ onready var label = $Label
 
 func _ready():
 	set_text(text)
-	remove_child(line_edit)
+	line_edit.hide()
 	line_edit.connect('focus_exited', self, 'reject')
 	line_edit.connect('gui_input', self, 'line_edit_input')
 	label.connect('gui_input', self, 'label_gui_input')
@@ -47,7 +47,6 @@ func start_editing():
 	line_edit.text = label.text
 	label.hide()
 	line_edit.show()
-	add_child(line_edit)
 	line_edit.grab_focus()
 	line_edit.caret_position = line_edit.text.length()
 	line_edit.select_all()
@@ -57,12 +56,8 @@ func accept():
 	label.text = text
 	label.show()
 	line_edit.hide()
-	if line_edit.get_parent():
-		remove_child(line_edit)
 	emit_signal('text_changed', text)
 
 func reject():
 	label.show()
 	line_edit.hide()
-	if line_edit.get_parent():
-		remove_child(line_edit)

@@ -35,10 +35,14 @@ func _enter_tree():
 func _exit_tree():
 	if editor_instance:
 		remove_control_from_bottom_panel(editor_instance)
-		editor_instance.queue_free()
+		editor_instance.free()
 
 	if inspector_instance:
 		remove_inspector_plugin(inspector_instance)
+		if inspector_instance.selector:
+			inspector_instance.selector.queue_free()
+		if inspector_instance.tree:
+			inspector_instance.tree.queue_free()
 
 func show_conversation(conversation):
 	make_bottom_panel_item_visible(editor_instance)

@@ -10,6 +10,7 @@ func request_completion():
 	print('request_completion')
 
 # ******************************************************************************
+# internal helpers
 
 func get_selection():
 	var selection = {
@@ -41,6 +42,8 @@ func insert_text_at(_text, line, col):
 	set_cursor(line, col)
 	insert_text_at_cursor(_text)
 
+# ******************************************************************************
+
 func surround_selection(start, end):
 	var sel = get_selection()
 	var lines = text.split('\n')
@@ -63,6 +66,8 @@ var wrappers = {
 	ord('"'): ['"', '"'],
 	ord("'"): ["'", "'"],
 }
+
+# ------------------------------------------------------------------------------
 
 func move_line(direction):
 	var sel = get_selection()
@@ -97,6 +102,8 @@ func move_line(direction):
 
 	set_selection(sel)
 
+# ------------------------------------------------------------------------------
+
 func copy_line(direction):
 	var sel = get_selection()
 	var lines = Array(text.split('\n'))
@@ -126,6 +133,8 @@ func copy_line(direction):
 
 	set_selection(sel)
 
+# ------------------------------------------------------------------------------
+
 func toggle_comment():
 	var sel = get_selection()
 	var lines = Array(text.split('\n'))
@@ -151,6 +160,8 @@ func toggle_comment():
 	text = PoolStringArray(lines).join('\n')
 	set_selection(sel)
 
+# ******************************************************************************
+
 func _input(event):
 	if !visible or !has_focus():
 		return
@@ -174,7 +185,7 @@ func _input(event):
 		accept_event()
 		return
 
-	if event.as_text() == 'Control+Q':
+	if event.as_text() in ['Control+Q', 'Control+/']:
 		toggle_comment()
 		accept_event()
 		return

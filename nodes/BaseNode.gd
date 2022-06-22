@@ -143,7 +143,7 @@ func renamed(new_name):
 
 func get_data() -> Dictionary:
 	var _data = data.duplicate(true)
-	_data.position = var2str(Rect2(offset, rect_size))
+	_data.position = var2str(Rect2(offset.round(), rect_size.round()))
 	_data.name = Title.text
 	if _data.next == 'none':
 		_data.erase('next')
@@ -173,8 +173,8 @@ func set_data(new_data: Dictionary) -> GraphNode:
 		rename(new_data.name)
 	if 'position' in new_data:
 		var rect = str2var(new_data.position)
-		offset = rect.position
-		rect_size = rect.size
+		offset = rect.position.round()
+		rect_size = rect.size.round()
 	else:
 		if 'offset' in new_data:
 			offset = str2var(new_data.offset)

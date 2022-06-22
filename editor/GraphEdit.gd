@@ -50,22 +50,6 @@ func contents_changed():
 	if notify_changes:
 		emit_signal('node_changed')
 
-func _input(event: InputEvent) -> void:
-	if !is_visible_in_tree():
-		return
-	if !(event is InputEventMouseButton) or !event.pressed:
-		return
-	if !Rect2(rect_global_position, rect_size - Vector2(15, 15)).has_point(event.global_position):
-		return
-
-	# Scroll wheel up/down to zoom
-	if event.button_index == BUTTON_WHEEL_DOWN:
-		do_zoom_scroll(-1)
-		accept_event()
-	elif event.button_index == BUTTON_WHEEL_UP:
-		do_zoom_scroll(1)
-		accept_event()
-
 # ******************************************************************************
 
 var ctx = null
@@ -288,29 +272,6 @@ func focus_node(name: String):
 # 			center += (node.offset + (node.rect_size / 2)) * zoom
 
 # 		scroll_offset = center - (rect_size / 2)
-
-# ------------------------------------------------------------------------------
-
-# save the original mouse position
-# zoom the canvas
-# scale the original mouse position
-# get the new mouse position
-# add the difference to scroll_offset
-
-func do_zoom_scroll(step: int) -> void:
-	#TODO: this is much better, but still overshoots slightly
-	var anchor = get_offset_from_mouse()
-
-	var old_zoom = zoom
-	var new_zoom = zoom * pow(zoom_step, step)
-	zoom = new_zoom
-
-	if zoom_scroll:
-		var zoom_center = anchor - (scroll_offset + (rect_size / 2))
-		var ratio = 1.0 - zoom / old_zoom
-		scroll_offset -= zoom_center * ratio
-
-	emit_signal('zoom_changed', zoom)
 
 # ******************************************************************************
 

@@ -63,18 +63,15 @@ anchor_bottom = 1.0
 mouse_filter = 2
 theme = SubResource( 11 )
 script = ExtResource( 3 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="Portrait" type="Control" parent="."]
 anchor_left = 0.15625
-anchor_top = 0.596402
+anchor_top = 0.685291
 anchor_right = 0.15625
-anchor_bottom = 0.596402
+anchor_bottom = 0.685291
 margin_top = 0.198593
 margin_bottom = 0.198593
-rect_scale = Vector2( 2, 2 )
+rect_scale = Vector2( 4, 4 )
 mouse_filter = 1
 __meta__ = {
 "_edit_use_anchors_": true
@@ -176,6 +173,22 @@ __meta__ = {
 "_edit_lock_": true,
 "_edit_use_anchors_": false
 }
+
+[node name="Next" type="RichTextLabel" parent="TextBox"]
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = -29.2502
+margin_top = -49.1999
+margin_right = -8.25024
+margin_bottom = -24.1999
+rect_scale = Vector2( 2, 2 )
+custom_styles/normal = SubResource( 6 )
+bbcode_enabled = true
+bbcode_text = "[rainbow freq=0.1 sat=10 val=20]>"
+text = ">"
+scroll_active = false
 
 [node name="DebugLog" type="Label" parent="."]
 visible = false
