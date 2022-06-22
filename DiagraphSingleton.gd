@@ -28,18 +28,20 @@ func _ready():
 	call_deferred('refresh')
 
 	add_child(sandbox)
-	add_child(watcher)
-
-	watcher.add_scan_directory(characters_prefix)
-	watcher.add_scan_directory(conversation_prefix)
 
 	if OS.has_feature('HTML5'):
-		for file in get_all_files('res://' + conversation_path, '.json'):
-			var to_path = file.replace('res://', 'user://')
-			save_json(to_path, load_json(file))
-		for file in get_all_files('res://' + conversation_path, '.yarn'):
-			var to_path = file.replace('res://', 'user://')
-			save_yarn(to_path, load_yarn(file))
+		load_builtin_conversations()
+	else:
+		init_file_watcher()
+
+func init_file_watcher():
+	add_child(watcher)
+
+	watcher.add_scan_directory(conversation_prefix)
+	for folder in get_all_folders(conversation_prefix):
+		watcher.add_scan_directory(folder)
+
+	watcher.connect('files_changed', self, 'refresh')
 
 func refresh():
 	load_conversations()
@@ -64,6 +66,14 @@ func load_conversations():
 		var basefilename = path_to_name(convo).get_file().get_basename()
 		if !(basefilename in _conversations):
 			_conversations[basefilename] = convo
+
+func load_builtin_conversations():
+	for file in get_all_files('res://' + conversation_path, '.json'):
+		var to_path = file.replace('res://', 'user://')
+		save_json(to_path, load_json(file))
+	for file in get_all_files('res://' + conversation_path, '.yarn'):
+		var to_path = file.replace('res://', 'user://')
+		save_yarn(to_path, load_yarn(file))
 
 func load_characters():
 	characters.clear()
@@ -234,6 +244,25 @@ func get_all_files_and_folders(path: String, max_depth:=10, _depth:=0, _files:=[
 		_files.append(file_path)
 		if dir.current_is_dir():
 			get_all_files_and_folders(file_path, max_depth, _depth + 1, _files)
+		file = dir.get_next()
+	dir.list_dir_end()
+	return _files
+
+# get all folders in a given directory(and subdirectories, to a given depth)
+func get_all_folders(path: String, max_depth:=10, _depth:=0, _files:=[]) -> Array:
+	if _depth >= max_depth:
+		return []
+
+	var dir = Directory.new()
+	dir.open(path)
+	dir.list_dir_begin(true, true)
+
+	var file = dir.get_next()
+	while file != '':
+		var file_path = dir.get_current_dir().plus_file(file)
+		if dir.current_is_dir():
+			_files.append(file_path)
+			get_all_folders(file_path, max_depth, _depth + 1, _files)
 		file = dir.get_next()
 	dir.list_dir_end()
 	return _files

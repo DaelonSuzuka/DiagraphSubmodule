@@ -18,6 +18,8 @@ signal files_created(files)
 signal files_modified(files)
 signal files_deleted(files)
 
+signal files_changed()
+
 func _ready() -> void:
 	_current_delay = scan_delay
 	_remaining_steps = scan_step
@@ -45,7 +47,7 @@ func _process(delta: float) -> void:
 		if _current_directory_name.empty():
 			_current_directory_name = _directory_list.keys()[_current_directory]
 			_directory.open(_current_directory_name)
-			_directory.list_dir_begin(true, false)
+			_directory.list_dir_begin(true, true)
 		
 		var directory: Dictionary = _directory_list[_current_directory_name]
 		
@@ -61,10 +63,12 @@ func _process(delta: float) -> void:
 			else:
 				if not directory.new.empty():
 					emit_signal("files_created", directory.new)
+					emit_signal("files_changed")
 					directory.new.clear()
 				
 				if not directory.modified.empty():
 					emit_signal("files_modified", directory.modified)
+					emit_signal("files_changed")
 					directory.modified.clear()
 				
 				var deleted: Array
@@ -74,6 +78,7 @@ func _process(delta: float) -> void:
 				
 				if not deleted.empty():
 					emit_signal("files_deleted", deleted)
+					emit_signal("files_changed")
 			
 			directory.previous = directory.current
 			directory.current = {}
