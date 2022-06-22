@@ -91,6 +91,9 @@ func refresh():
 	zoom_hbox.get_parent().remove_child(zoom_hbox)
 	zoom_container.add_child(zoom_hbox)
 
+	if current_conversation:
+		load_conversation(current_conversation, true)
+
 func save():
 	save_conversation()
 	Diagraph.refresh()
@@ -137,11 +140,12 @@ func change_conversation(path):
 	if len(parts) > 1:
 		GraphEdit.focus_node(parts[1])
 
-func load_conversation(path):
+func load_conversation(path, force:=false):
 	var _path = path.trim_prefix(Diagraph.conversation_prefix)
 	var parts = _path.split(':')
 	var name = parts[0]
-	if current_conversation == name:
+
+	if !force and current_conversation == name:
 		return
 	GraphEdit.clear()
 	current_conversation = name

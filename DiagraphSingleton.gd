@@ -37,8 +37,10 @@ func _ready():
 func init_file_watcher():
 	add_child(watcher)
 
-	watcher.add_scan_directory(conversation_prefix)
 	for folder in get_all_folders(conversation_prefix):
+		watcher.add_scan_directory(folder)
+
+	for folder in get_all_folders(characters_prefix):
 		watcher.add_scan_directory(folder)
 
 	watcher.connect('files_changed', self, 'refresh')
